@@ -14,6 +14,12 @@ var util = require('util');
 function Property(options){
 	this.options = options;
 	this.type_code = 'S';
+	if(options && options.validate){
+		this.validate = options.validate;
+	} else {
+		this.validate = function(val){
+		};
+	}
 }
 
 
@@ -30,6 +36,16 @@ util.inherits(StringProperty, Property);
  * Number Property
  */
 function NumberProperty(options){
+	if(options && !options.validate && (options.max || options.min)){
+		options.validate = function(val){
+			if(options.max && val > options.max){
+				throw new Error('Value ' + val + ' is greater then ' + options.max);
+			}
+			if(options.min && val < options.min){
+				throw new Error('Value ' + val + ' is less then ' + options.min);
+			}
+		};
+	}
 	Property.call(this, options);
 	this.type_code = 'N';
 }

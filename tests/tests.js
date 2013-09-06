@@ -17,7 +17,7 @@ var Test = db.define({
 		__id__: new db.types.StringProperty(),
 		name: new db.types.StringProperty({verbose_name: 'My Name'}),
 		numeric: new db.types.NumberProperty({verbose_name: 'Some Number'}),
-		num_restricted: new db.types.NumberProperty({min: 0, max:10}),
+		num_restricted: new db.types.NumberProperty({min: 1, max:10}),
 		stringSet: new db.types.SetProperty({ type: String, verbose_name: 'A list of strings'}),
 		numberSet: new db.types.SetProperty({ type: Number, verbose_name: 'A list of numbers'})
 	}
@@ -85,19 +85,38 @@ describe('[DB]', function(){
 	it('Should not allow numbers outside of the range to be set', function(){
 		assert.throws( function(){
 			var obj = new Test('foo');
-			obj.numeric_restricted = 11;
+			obj.num_restricted = 11;
+			obj.save(function(err, data){
+				console.log('Saved Object with num restricted 11');
+			});
 		}, Error);
 		assert.throws( function(){
 			var obj = new Test('foo');
-			obj.numeric_restricted = 0;
+			obj.num_restricted = 0;
+			obj.save(function(err, data){
+				console.log('Saved Object with num restricted 0');
+			});
 		}, Error);
 		assert.throws( function(){
 			var obj = new Test('foo');
-			obj.numeric_restricted = 20;
+			obj.num_restricted = 20;
+			obj.save(function(err, data){
+				console.log('Saved Object with num restricted 20');
+			});
 		}, Error);
+
+		// Try saving a valid number
+		var obj = new Test('foo');
+		obj.num_restricted = 5;
+		obj.save(function(err, data){});
+		// Try numbers at the very edge cases
+		obj.num_restricted = 1;
+		obj.save(function(err, data){});
+		obj.num_restricted = 10;
+		obj.save(function(err, data){});
 	});
 
-	it('Should call our special setter function', function(done){
+	it('Should call our special validate function', function(done){
 		function specialFnc(val){
 			console.log('specialFnc called: ' + val);
 			assert.equal(val, 5);
@@ -113,6 +132,9 @@ describe('[DB]', function(){
 		});
 		var obj = new Special('foo');
 		obj.special = 5;
+		obj.save(function(err, data){
+			console.log('Save Completed');
+		});
 		
 	});
 

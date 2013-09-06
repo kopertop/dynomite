@@ -120,6 +120,10 @@ function save(obj, callback, expected){
 	for (var prop_name in properties){
 		var prop_type = properties[prop_name].type_code;
 		var prop_val = obj[prop_name];
+
+		// Validate
+		properties[prop_name].validate(prop_val);
+
 		// Check for custom property options
 		if(properties[prop_name].options){
 			// Auto now and Auto now add should automatically get set
