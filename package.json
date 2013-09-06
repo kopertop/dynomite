@@ -2,10 +2,10 @@
 	"author": "Chris Moyer <cmoyer@newstex.com>",
 	"name": "dynomite",
 	"description": "Simple ORM for AWS DynamoDB",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"repository": {
 		"type": "git",
-		"url": "git@bitbucket.org:developer/dynomite.git"
+		"url": "http://bitbucket.org/developer/dynomite"
 	},
 	"scripts": {
 		"test": "mocha tests"
@@ -20,5 +20,5 @@
 		"data",
 		"model"
 	],
-	"license": "NONE"
+	"license": "MIT"
 }
