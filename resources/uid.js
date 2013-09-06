@@ -61,6 +61,10 @@ UID.next = function(type, callback, properties){
 				UID.next(type, callback, properties);
 				console.log('ERROR ', err);
 			} else {
+				// Handle first UID
+				if(!last_obj){
+					last_obj = new UID(type, 0);
+				}
 				// Increment by one, and try a conditional save
 				var next_id = last_obj.__id__ + 1;
 				var obj = new UID(type, next_id);

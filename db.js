@@ -34,7 +34,6 @@ function dynamizeKey(model, id){
  * @param opts: Optional options to pass through to DynamoDB.getItem
  */
 function lookup(model, id, callback, opts){
-	console.log('Lookup: ' + model._table_name + ' <' + id + '>');
 	var args = {
 		TableName: model._table_name,
 		Key: dynamizeKey(model, id)
@@ -65,7 +64,6 @@ function lookup(model, id, callback, opts){
  * @param opts: Optional options to pass through to DynamoDB.batchGetItem
  */
 function batchLookup(model, ids, callback, opts){
-	console.log({msg: 'batchLookup', table:model._table_name, ids:ids});
 	var keys = [];
 	for(var x in ids){
 		var id = ids[x];
@@ -114,7 +112,6 @@ function convertValueToDynamo(val){
 function save(obj, callback, expected){
 	var table_name = obj.constructor._table_name;
 	var properties = obj.constructor._properties;
-	console.log({msg:'Save', table:table_name, obj: obj});
 	
 	// Create the Object Value mapping
 	var obj_values = { };
@@ -158,8 +155,6 @@ function save(obj, callback, expected){
 	dynamodb.putItem(args, function(err, data){
 		if(err){
 			console.error(err);
-		} else {
-			console.log(data);
 		}
 		if(callback){
 			callback(err, data);
@@ -180,8 +175,6 @@ function remove(obj, callback){
 	dynamodb.deleteItem(params, function(err, data){
 		if (err){
 			console.error(err);
-		} else {
-			console.log(data);
 		}
 		if(callback){
 			callback(err, data);
@@ -203,9 +196,13 @@ function query(model, opts, callback){
 			console.error(err);
 			callback(err);
 		} else {
-			data.Items.forEach(function(item){
-				callback(null, model.from_dynamo(item));
-			});
+			if(data.Count > 0){
+				data.Items.forEach(function(item){
+					callback(null, model.from_dynamo(item));
+				});
+			} else {
+				callback(null, null);
+			}
 		}
 	});
 }
@@ -222,7 +219,7 @@ function define(options){
 	
 	var Cls = function(hashKey, rangeKey){
 		this[Cls._hashKeyName] = hashKey;
-		if(rangeKey){
+		if(typeof rangeKey != 'undefined'){
 			this[Cls._rangeKeyName] = rangeKey;
 		}
 	};

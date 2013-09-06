@@ -105,7 +105,9 @@ describe('[DB]', function(){
 		}
 		var Special = db.define({
 			tableName: 'Test',
+			key: '__id__',
 			properties: {
+				__id__: new db.types.StringProperty(),
 				special: new db.types.StringProperty({validate: specialFnc})
 			}
 		});
