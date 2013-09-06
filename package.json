@@ -1,0 +1,24 @@
+{
+	"author": "Chris Moyer <cmoyer@newstex.com>",
+	"name": "dynomite",
+	"description": "Simple ORM for AWS DynamoDB",
+	"version": "0.1.0",
+	"repository": {
+		"type": "git",
+		"url": "git@bitbucket.org:developer/dynomite.git"
+	},
+	"scripts": {
+		"test": "mocha tests"
+	},
+	"dependencies": {
+		"aws-sdk": "*",
+		"node-uuid": "*",
+		"thirty-two": "*"
+	},
+	"devDependencies": { "mocha": "*" },
+	"keywords": [
+		"data",
+		"model"
+	],
+	"license": "NONE"
+}
