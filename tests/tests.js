@@ -1,6 +1,6 @@
 /*
  * @author Chris Moyer <cmoyer@newstex.com>
- * Mocha tests for Tower
+ * Mocha tests for Dynmoite
  *
  */
 /* global require, beforeEach, describe, it */
