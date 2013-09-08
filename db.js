@@ -227,6 +227,22 @@ function define(options){
 			this[Cls._rangeKeyName] = rangeKey;
 		}
 	};
+	// Allows an "onSave" trigger to be called
+	// when save() is called
+	if(typeof options.onSave == 'function'){
+		Cls.prototype.onSave = options.onSave;
+	} else {
+		Cls.prototype.onSave = function(){};
+	}
+
+	// Allows an "onRemove" trigger to be called
+	// when remove() is called
+	if(typeof options.onRemove == 'function'){
+		Cls.prototype.onRemove = options.onRemove;
+	} else {
+		Cls.prototype.onRemove = function(){};
+	}
+
 	if(typeof options.key == 'string'){
 		Cls._hashKeyName = options.key;
 		Cls._hashKeyType = options.properties[options.key].type_code;
@@ -243,9 +259,11 @@ function define(options){
 		return lookup(Cls, id, callback, opts);
 	};
 	Cls.prototype.save = function(cb, expected){
+		this.onSave();
 		return save(this, cb, expected);
 	};
 	Cls.prototype.remove = function(callback){
+		this.onRemove();
 		return remove(this, callback);
 	};
 	Cls.prototype.getID = function(){
