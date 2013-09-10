@@ -2,7 +2,7 @@
 	"author": "Chris Moyer <cmoyer@newstex.com>",
 	"name": "dynomite",
 	"description": "Simple ORM for AWS DynamoDB",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"repository": {
 		"type": "git",
 		"url": "http://bitbucket.org/developer/dynomite"
