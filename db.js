@@ -187,6 +187,26 @@ function remove(obj, callback){
 }
 
 /**
+ * Generic parser for a list of objects
+ * Called by both Query and Scan
+ */
+function listIterator(model, callback, err, data, opts){
+	if(err){
+		console.error(err);
+		callback(err);
+	} else {
+		if(data.Count > 0){
+			data.Items.forEach(function(item){
+				callback(null, model.from_dynamo(item));
+			});
+			// TODO: Add paging
+		} else {
+			callback(null, null);
+		}
+	}
+}
+
+/**
  * Query the table
  * @param model: The Model object to look for
  * @param opts: Additional options to send to the query function
@@ -196,21 +216,22 @@ function remove(obj, callback){
 function query(model, opts, callback){
 	opts.TableName = model._table_name;
 	dynamodb.query(opts, function(err, data){
-		if(err){
-			console.error(err);
-			callback(err);
-		} else {
-			if(data.Count > 0){
-				data.Items.forEach(function(item){
-					callback(null, model.from_dynamo(item));
-				});
-			} else {
-				callback(null, null);
-			}
-		}
+		listIterator(model, callback, err, data);
 	});
 }
-
+/**
+ * Scan through all objects in a given model
+ * @param model: The model object to iterate over
+ * @param opts: Additional options to send to the Scan function
+ * @param callback: The callback function to be called with the results
+ * @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB_20120810.html#scan-property
+ */
+function scan(model, opts, callback){
+	opts.TableName = model._table_name;
+	dynamodb.scan(opts, function(err, data){
+		listIterator(model, callback, err, data);
+	});
+}
 
 /**
  * Define a new Model
@@ -286,6 +307,14 @@ function define(options){
 	 */
 	Cls.query = function(opts, callback){
 		return query(Cls, opts, callback);
+	};
+	/**
+	 * Iterate over all values
+	 */
+	Cls.forEach = function(callback, opts){
+		return scan(Cls, opts || {}, function(err, data){
+			callback(data);
+		});
 	};
 
 	/**
