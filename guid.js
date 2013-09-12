@@ -50,7 +50,7 @@ var last_id = (new Date()).getTime().toString(16) + sequence_id + machine_id;
  */
 exports.next = function(cb){
 	var next_id = 0;
-	while(last_id >= next_id){
+	while(parseInt(last_id, 16) >= next_id){
 		var now = new Date();
 		next_id = now.getTime().toString(16) + sequence_id + machine_id;
 	}
