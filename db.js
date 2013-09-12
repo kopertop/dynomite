@@ -133,7 +133,7 @@ function save(obj, callback, expected){
 				obj[prop_name] = prop_val;
 			}
 		}
-		if(typeof prop_val != 'undefined'){
+		if(typeof prop_val != 'undefined' && (typeof prop_val != 'object' || prop_val.length > 0)){
 			obj_values[prop_name] = {};
 			if(prop_type.length == 2 && prop_type[1] == 'S'){
 				for (var n in prop_val){
@@ -288,7 +288,7 @@ function define(options){
 		return remove(this, callback);
 	};
 	Cls.prototype.getID = function(){
-		if(this._rangeKeyName){
+		if(Cls._rangeKeyName){
 			return [this[Cls._hashKeyName], this[Cls._rangeKeyName]];
 		} else {
 			return this[Cls._hashKeyName];
@@ -314,6 +314,27 @@ function define(options){
 	Cls.forEach = function(callback, opts){
 		return scan(Cls, opts || {}, function(err, data){
 			callback(data);
+		});
+	};
+
+	/**
+	 * Scan, returns objects in batches
+	 */
+	Cls.scan = function(callback, opts){
+		opts = opts || {};
+		opts.TableName = Cls._table_name;
+		dynamodb.scan(opts, function(err, data){
+			if(err){
+				callback(err, null);
+			} else {
+				var batch = [];
+				if(data.Count > 0){
+					data.Items.forEach(function(item){
+						batch.push(Cls.from_dynamo(item));
+					});
+				}
+				callback(err, batch);
+			}
 		});
 	};
 
