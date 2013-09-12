@@ -288,7 +288,7 @@ function define(options){
 		return remove(this, callback);
 	};
 	Cls.prototype.getID = function(){
-		if(this._rangeKeyName){
+		if(Cls._rangeKeyName){
 			return [this[Cls._hashKeyName], this[Cls._rangeKeyName]];
 		} else {
 			return this[Cls._hashKeyName];
