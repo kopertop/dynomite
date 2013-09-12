@@ -318,6 +318,27 @@ function define(options){
 	};
 
 	/**
+	 * Scan, returns objects in batches
+	 */
+	Cls.scan = function(callback, opts){
+		opts = opts || {};
+		opts.TableName = Cls._table_name;
+		dynamodb.scan(opts, function(err, data){
+			if(err){
+				callback(err, null);
+			} else {
+				var batch = [];
+				if(data.Count > 0){
+					data.Items.forEach(function(item){
+						batch.push(Cls.from_dynamo(item));
+					});
+				}
+				callback(err, batch);
+			}
+		});
+	};
+
+	/**
 	 * Return this object type from a DynamoDB Item
 	 */
 	Cls.from_dynamo = function(item){
