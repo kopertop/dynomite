@@ -4,9 +4,49 @@
  *
  * @author Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, exports, process */
+/* global require, exports, process, Buffer */
 var http = require('http');
 var querystring = require('querystring');
+
+/**
+ * Generic request function that handles proxies
+ */
+function request(options, callback, endpoint){
+
+	// Proxy Support
+	if(process.env.http_proxy){
+		var proxy = process.env.http_proxy.split('/')[2].split(':');
+		options.host = proxy[0];
+		options.port = parseInt(proxy[1], 10);
+		options.path = 'http://' + endpoint + options.path;
+		if(!options.headers){
+			options.headers = {};
+		}
+		options.headers.Host = endpoint;
+	}
+
+	return http.request(options, function(resp){
+		var buffer = '';
+		resp.on('data', function(chunk){
+			buffer += chunk;
+		});
+		resp.on('end', function(){
+			if(resp.statusCode < 300){
+				try{
+					callback(JSON.parse(buffer));
+				} catch (e){
+					console.error({
+						module: 'cloudsearch',
+						err: e
+					});
+				}
+			} else {
+				callback({error: resp.statusCode, msg: buffer});
+			}
+		});
+	});
+
+}
 
 /**
  * CloudSearch SearchConnection
@@ -24,9 +64,8 @@ var querystring = require('querystring');
  * 		console.log(data);
  * 	);
  *
- * Arguments:
- * 	endoint - String - Hostname of the search endpoint
- * 	item_class - Class - An optional override of a class to call to return instead of
+ * @param endoint:  String - Hostname of the search endpoint
+ * @param item_class:  Class - An optional override of a class to call to return instead of
  * 		a generic object
  */
 function SearchConnection(args){
@@ -49,37 +88,112 @@ SearchConnection.prototype.search = function (args, callback){
 		path: '/2011-02-01/search?' + querystring.stringify(simplified_args)
 	};
 
-	// Proxy Support
-	if(process.env.http_proxy){
-		var proxy = process.env.http_proxy.split('/')[2].split(':');
-		options.host = proxy[0];
-		options.port = parseInt(proxy[1], 10);
-		options.path = 'http://' + this.endpoint + options.path;
-		options.headers = {
-			Host: this.endpoint
-		};
-	}
-
-	http.request(options, function(resp){
-		var buffer = '';
-		resp.on('data', function(chunk){
-			buffer += chunk;
-		});
-		resp.on('end', function(){
-			if(resp.statusCode < 300){
-				try{
-					callback(JSON.parse(buffer));
-				} catch (e){
-					console.error({
-						module: 'cloudsearch',
-						err: e
-					});
-				}
-			} else {
-				callback({error: resp.statusCode, msg: buffer});
-			}
-		});
-	}).end();
+	request(options, callback, this.endpoint).end();
 };
 
 exports.SearchConnection = SearchConnection;
+
+/**
+ * DocumentConnection - Used to add new documents to a CloudSearch Index
+ *
+ * Usage:
+ * 	var conn = new DocumentConnection({
+ * 		endpoint: 'document-domain.us-east-1.cloudsearch.amazonaws.com'
+ * 	})
+ * 	conn.add({
+ * 		id: 'abc_123456_7890',
+ * 		version: 1,
+ * 		lang: 'en',
+ * 		fields: {
+ * 			name: 'Foo',
+ * 			text: 'Some long text to be indexed'
+ * 		}
+ * 	});
+ * 	conn.delete({
+ * 		id: 'document_to_delete',
+ * 		version: 2
+ * 	});
+ * 	conn.commit(function(data){
+* 			console.log(data);
+ * 	);
+ *
+ * @param endoint:  String - Hostname of the search endpoint
+ *
+ * @param endoint:  String - Hostname of the document endpoint
+ */
+function DocumentConnection(args){
+	this.endpoint = args.endpoint;
+	this.batch = [];
+}
+
+/**
+ * Add a document to the batch to be submitted to cloudsearch
+ * Note that this does not actually submit anything, but mearly adds a document to the
+ * `batch` parameter on this object
+ *
+ * @param args: Arguments, should contain an object with the following parameters
+ * 	id: Document Identifier (string), Must consist of all lowercase alpha numeric values, or _
+ * 	version: Document Version (number)
+ * 	lang: Document Language ISO code (should almost always be "en"), if not specified, we default to "en"
+ * 	fields: The list of metadata fields to index.
+ *
+ */
+DocumentConnection.prototype.add = function (args){
+	args.type = 'add';
+	this.batch.push(args);
+	return this;
+};
+/**
+ * Remove a document from cloudsearch
+ * Like `add`, this does not actually submit any changes, but adds
+ * the pending change to the `batch` parameter
+ *
+ * @param args: Arguments, should contain an object with the following parameters
+ * 	id: Document Identifier (string), Must consist of all lowercase alpha numeric values, or _
+ * 	version: Document Version (number)
+ */
+DocumentConnection.prototype.delete = function (args){
+	args.type = 'delete';
+	this.batch.push(args);
+	return this;
+};
+
+/**
+ * Clear out the pending changes
+ */
+DocumentConnection.prototype.clear = function (){
+	this.batch = [];
+	return this;
+};
+
+/**
+ * Commit the pending changes
+ *
+ * @param callback: A callback function to call when the operation is completed
+ */
+DocumentConnection.prototype.commit = function (callback){
+	var sdf = JSON.stringify(this.batch);
+	var self = this;
+
+	var options = {
+		host: this.endpoint,
+		path: '/2011-02-01/documents/batch',
+		headers: {
+			'Content-Type': 'application/json',
+			'Content-Length': Buffer.byteLength(sdf)
+		},
+		method: 'POST'
+	};
+	var req = request(options, function(data){
+		self.clear();
+		if(callback){
+			callback(data);
+		}
+	}, this.endpoint);
+	req.write(sdf);
+	req.end();
+	return self;
+};
+
+
+exports.DocumentConnection = DocumentConnection;
