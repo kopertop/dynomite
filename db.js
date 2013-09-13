@@ -199,7 +199,11 @@ function listIterator(model, callback, err, data, opts){
 			data.Items.forEach(function(item){
 				callback(null, model.from_dynamo(item));
 			});
-			// TODO: Add paging
+			// Page
+			if(data.LastEvaluatedKey){
+				opts.ExclusiveStartKey = data.LastEvaluatedKey;
+				scan(model, opts, callback);
+			}
 		} else {
 			callback(null, null);
 		}
@@ -216,7 +220,7 @@ function listIterator(model, callback, err, data, opts){
 function query(model, opts, callback){
 	opts.TableName = model._table_name;
 	dynamodb.query(opts, function(err, data){
-		listIterator(model, callback, err, data);
+		listIterator(model, callback, err, data, opts);
 	});
 }
 /**
@@ -229,7 +233,7 @@ function query(model, opts, callback){
 function scan(model, opts, callback){
 	opts.TableName = model._table_name;
 	dynamodb.scan(opts, function(err, data){
-		listIterator(model, callback, err, data);
+		listIterator(model, callback, err, data, opts);
 	});
 }
 
@@ -333,7 +337,7 @@ function define(options){
 						batch.push(Cls.from_dynamo(item));
 					});
 				}
-				callback(err, batch);
+				callback(err, batch, data.LastEvaluatedKey);
 			}
 		});
 	};
