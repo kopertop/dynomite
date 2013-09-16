@@ -133,7 +133,7 @@ function save(obj, callback, expected){
 				obj[prop_name] = prop_val;
 			}
 		}
-		if(typeof prop_val != 'undefined' && (typeof prop_val != 'object' || prop_val.length > 0)){
+		if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || prop_val.length > 0)){
 			obj_values[prop_name] = {};
 			if(prop_type.length == 2 && prop_type[1] == 'S'){
 				for (var n in prop_val){
@@ -200,7 +200,7 @@ function listIterator(model, callback, err, data, opts){
 				callback(null, model.from_dynamo(item));
 			});
 			// Page
-			if(data.LastEvaluatedKey){
+			if(data.LastEvaluatedKey && !opts.Limit){
 				opts.ExclusiveStartKey = data.LastEvaluatedKey;
 				scan(model, opts, callback);
 			}
