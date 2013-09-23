@@ -190,7 +190,7 @@ function remove(obj, callback){
  * Generic parser for a list of objects
  * Called by both Query and Scan
  */
-function listIterator(model, callback, err, data, opts){
+function listIterator(model, callback, err, data, opts, continue_function){
 	if(err){
 		console.error(err);
 		callback(err);
@@ -200,9 +200,9 @@ function listIterator(model, callback, err, data, opts){
 				callback(null, model.from_dynamo(item));
 			});
 			// Page
-			if(data.LastEvaluatedKey && !opts.Limit){
+			if(data.LastEvaluatedKey && !opts.Limit && continue_function){
 				opts.ExclusiveStartKey = data.LastEvaluatedKey;
-				scan(model, opts, callback);
+				continue_function(model, opts, callback);
 			}
 		} else {
 			callback(null, null);
@@ -219,8 +219,21 @@ function listIterator(model, callback, err, data, opts){
  */
 function query(model, opts, callback){
 	opts.TableName = model._table_name;
+	if(opts.match){
+		opts.KeyConditions = {};
+		Object.keys(opts.match).forEach(function(prop_name){
+			var prop = model._properties[prop_name];
+			var attr_value = {};
+			attr_value[prop.type_code] = opts.match[prop_name];
+			opts.KeyConditions[prop_name] = {
+				AttributeValueList: [attr_value],
+				ComparisonOperator: 'EQ'
+			};
+		});
+		delete opts.match;
+	}
 	dynamodb.query(opts, function(err, data){
-		listIterator(model, callback, err, data, opts);
+		listIterator(model, callback, err, data, opts, query);
 	});
 }
 /**
@@ -233,7 +246,7 @@ function query(model, opts, callback){
 function scan(model, opts, callback){
 	opts.TableName = model._table_name;
 	dynamodb.scan(opts, function(err, data){
-		listIterator(model, callback, err, data, opts);
+		listIterator(model, callback, err, data, opts, scan);
 	});
 }
 
