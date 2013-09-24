@@ -38,6 +38,7 @@ var UID = db.define({
  * @param callback: The callback to return
  * @param properties: The list of properties to save to the UID object
  */
+var BACKOFF = 500;
 UID.next = function(type, callback, properties){
 	// Make sure we have a type and callback
 	if(!type || !callback){
@@ -57,9 +58,13 @@ UID.next = function(type, callback, properties){
 			}
 		}, function(err, last_obj){
 			if(err){
-				// If there is an error, try again
-				UID.next(type, callback, properties);
-				console.log('ERROR ', err);
+				// If there is an error, try again after a short
+				// delay
+				setTimeout(function(){
+					UID.next(type, callback, properties);
+				}, BACKOFF);
+				BACKOFF += 500;
+				console.log('ERROR ', err, 'BACKING OFF', BACKOFF);
 			} else {
 				// Handle first UID
 				if(!last_obj){
@@ -75,8 +80,11 @@ UID.next = function(type, callback, properties){
 				obj.save(function(err, data){
 					if(err){
 						// If there is an error, try again
-						console.log('ERROR ', err);
-						UID.next(type, callback, properties);
+						setTimeout(function(){
+							UID.next(type, callback, properties);
+						}, BACKOFF);
+						console.log('ERROR ', err, 'BACKING OFF', BACKOFF);
+						BACKOFF += 500;
 					} else {
 						callback(obj);
 					}

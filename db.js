@@ -133,7 +133,7 @@ function save(obj, callback, expected){
 				obj[prop_name] = prop_val;
 			}
 		}
-		if(typeof prop_val != 'undefined' && (typeof prop_val != 'object' || prop_val.length > 0)){
+		if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || prop_val.length > 0)){
 			obj_values[prop_name] = {};
 			if(prop_type.length == 2 && prop_type[1] == 'S'){
 				for (var n in prop_val){
@@ -190,7 +190,7 @@ function remove(obj, callback){
  * Generic parser for a list of objects
  * Called by both Query and Scan
  */
-function listIterator(model, callback, err, data, opts){
+function listIterator(model, callback, err, data, opts, continue_function){
 	if(err){
 		console.error(err);
 		callback(err);
@@ -199,7 +199,11 @@ function listIterator(model, callback, err, data, opts){
 			data.Items.forEach(function(item){
 				callback(null, model.from_dynamo(item));
 			});
-			// TODO: Add paging
+			// Page
+			if(data.LastEvaluatedKey && !opts.Limit && continue_function){
+				opts.ExclusiveStartKey = data.LastEvaluatedKey;
+				continue_function(model, opts, callback);
+			}
 		} else {
 			callback(null, null);
 		}
@@ -215,8 +219,21 @@ function listIterator(model, callback, err, data, opts){
  */
 function query(model, opts, callback){
 	opts.TableName = model._table_name;
+	if(opts.match){
+		opts.KeyConditions = {};
+		Object.keys(opts.match).forEach(function(prop_name){
+			var prop = model._properties[prop_name];
+			var attr_value = {};
+			attr_value[prop.type_code] = opts.match[prop_name];
+			opts.KeyConditions[prop_name] = {
+				AttributeValueList: [attr_value],
+				ComparisonOperator: 'EQ'
+			};
+		});
+		delete opts.match;
+	}
 	dynamodb.query(opts, function(err, data){
-		listIterator(model, callback, err, data);
+		listIterator(model, callback, err, data, opts, query);
 	});
 }
 /**
@@ -229,7 +246,7 @@ function query(model, opts, callback){
 function scan(model, opts, callback){
 	opts.TableName = model._table_name;
 	dynamodb.scan(opts, function(err, data){
-		listIterator(model, callback, err, data);
+		listIterator(model, callback, err, data, opts, scan);
 	});
 }
 
@@ -333,7 +350,7 @@ function define(options){
 						batch.push(Cls.from_dynamo(item));
 					});
 				}
-				callback(err, batch);
+				callback(err, batch, data.LastEvaluatedKey);
 			}
 		});
 	};
