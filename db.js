@@ -133,7 +133,7 @@ function save(obj, callback, expected){
 				obj[prop_name] = prop_val;
 			}
 		}
-		if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || prop_val.length > 0)){
+		if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || !(prop_val instanceof Array) || prop_val.length > 0)){
 			obj_values[prop_name] = {};
 			if(prop_type.length == 2 && prop_type[1] == 'S'){
 				for (var n in prop_val){
