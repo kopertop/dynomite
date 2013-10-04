@@ -46,6 +46,7 @@ function lookup(model, id, callback, opts){
 	dynamodb.getItem(args, function(err, data){
 		if(err){
 			console.error(err);
+			callback(null, err);
 		} else {
 			if(data.Item){
 				callback(model.from_dynamo(data.Item));
@@ -75,6 +76,7 @@ function batchLookup(model, ids, callback, opts){
 	dynamodb.batchGetItem(args, function(err, data){
 		if(err){
 			console.error(err);
+			callback(null, err);
 		} else {
 			var items = [];
 			for(var x in data.Responses[model._table_name]){
