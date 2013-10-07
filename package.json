@@ -11,7 +11,7 @@
 		"test": "mocha tests"
 	},
 	"dependencies": {
-		"aws-sdk": "git://github.com/aws/aws-sdk-js",
+		"aws-sdk": ">=1.7.1",
 		"node-uuid": "*",
 		"thirty-two": "*"
 	},
