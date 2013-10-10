@@ -11,7 +11,7 @@
 		"test": "mocha tests"
 	},
 	"dependencies": {
-		"aws-sdk": ">=1.8.0",
+		"aws-sdk": ">=1.8.1",
 		"node-uuid": "*",
 		"thirty-two": "*"
 	},
