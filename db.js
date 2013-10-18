@@ -9,6 +9,16 @@ AWS.config.update({region: 'us-east-1'});
 var dynamodb = new AWS.DynamoDB();
 
 /**
+ * Delayed function call
+ */
+function DelayFunction(fnc, args){
+	this.call = function(){
+		return fnc.apply(null, args);
+	};
+}
+
+
+/**
  * Dynamize the hashKey and rangeKey ID
  */
 function dynamizeKey(model, id){
@@ -352,7 +362,12 @@ function define(options){
 						batch.push(Cls.from_dynamo(item));
 					});
 				}
-				callback(err, batch, data.LastEvaluatedKey);
+				var next = null;
+				if(data.LastEvaluatedKey){
+					opts.ExclusiveStartKey = data.LastEvaluatedKey;
+					next = new DelayFunction(Cls.scan, [callback, opts]).call;
+				}
+				callback(err, batch, next);
 			}
 		});
 	};
