@@ -116,6 +116,10 @@ function convertValueToDynamo(val){
 	} else if (typeof val == 'object'){
 		if(val instanceof Date){
 			val = String(val.getTime());
+			// Prevent invalid dates
+			if(val == 'NaN'){
+				val = '0';
+			}
 		}
 	}
 	return val;
@@ -178,7 +182,8 @@ function save(obj, callback, expected){
 	// Save
 	dynamodb.putItem(args, function(err, data){
 		if(err){
-			console.error(err);
+			console.error(err, data);
+			console.log('ERROR WITH', args);
 		}
 		if(callback){
 			callback(err, data);
