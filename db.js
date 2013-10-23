@@ -9,6 +9,24 @@ AWS.config.update({region: 'us-east-1'});
 var dynamodb = new AWS.DynamoDB();
 
 /**
+ * Delayed function call
+ */
+function delayFunction(fnc, callback, opts){
+	return function next(newCallback, newOpts){
+		if(!newCallback){
+			newCallback = callback;
+		}
+		if(!newOpts){
+			newOpts = opts;
+		}
+		// Exclusive Start Key is always used from the original
+		newOpts.ExclusiveStartKey = opts.ExclusiveStartKey;
+		return fnc(newCallback, newOpts);
+	};
+}
+
+
+/**
  * Dynamize the hashKey and rangeKey ID
  */
 function dynamizeKey(model, id){
@@ -342,19 +360,35 @@ function define(options){
 	Cls.scan = function(callback, opts){
 		opts = opts || {};
 		opts.TableName = Cls._table_name;
-		dynamodb.scan(opts, function(err, data){
-			if(err){
-				callback(err, null);
-			} else {
-				var batch = [];
-				if(data.Count > 0){
-					data.Items.forEach(function(item){
-						batch.push(Cls.from_dynamo(item));
-					});
+		// Handle the next_fnc being bassed in as an ExclusiveStartKey
+		if(typeof opts.ExclusiveStartKey == 'function'){
+			opts.ExclusiveStartKey(callback, opts);
+		} else {
+			dynamodb.scan(opts, function(err, data){
+				if(err){
+					// If the error is re-tryable, send along a 
+					// 'next function', which lets the user re-try this action
+					if(err && err.code && err.code == 'ProvisionedThroughputExceededException'){
+						callback(err, data, delayFunction(Cls.scan, callback, opts));
+					} else {
+						callback(err, null);
+					}
+				} else {
+					var batch = [];
+					if(data.Count > 0){
+						data.Items.forEach(function(item){
+							batch.push(Cls.from_dynamo(item));
+						});
+					}
+					var next = null;
+					if(data.LastEvaluatedKey){
+						opts.ExclusiveStartKey = data.LastEvaluatedKey;
+						next = delayFunction(Cls.scan, callback, opts);
+					}
+					callback(err, batch, next);
 				}
-				callback(err, batch, data.LastEvaluatedKey);
-			}
-		});
+			});
+		}
 	};
 
 	/**
