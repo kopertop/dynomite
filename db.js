@@ -228,6 +228,8 @@ function listIterator(model, callback, err, data, opts, continue_function){
 			if(data.LastEvaluatedKey && !opts.Limit && continue_function){
 				opts.ExclusiveStartKey = data.LastEvaluatedKey;
 				continue_function(model, opts, callback);
+			} else {
+				callback(null, null);
 			}
 		} else {
 			callback(null, null);
