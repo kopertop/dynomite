@@ -265,7 +265,13 @@ function query(model, opts, callback){
  */
 function scan(model, opts, callback){
 	opts.TableName = model._table_name;
-	dynamodb.scan(opts, function(err, data){
+	// Cheap way to make a copy
+	var scanOpts = JSON.parse(JSON.stringify(opts));
+	if(opts.PageLimit){
+		scanOpts.Limit = opts.PageLimit;
+		delete scanOpts.PageLimit;
+	}
+	dynamodb.scan(scanOpts, function(err, data){
 		listIterator(model, callback, err, data, opts, scan);
 	});
 }
@@ -408,6 +414,15 @@ function define(options){
 		}
 		return obj;
 	};
+
+	/**
+	 * Returns the statistics from DynamoDB, including approximate size and item count
+	 * @see: http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#describeTable-property
+	 */
+	Cls.describe = function(callback){
+		dynamodb.describeTable({ TableName: Cls._table_name }, callback);
+	};
+
 
 	return Cls;
 }
