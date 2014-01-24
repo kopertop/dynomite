@@ -411,12 +411,21 @@ function define(options){
 		var obj = new Cls();
 		for (var prop_name in item){
 			var prop_val = item[prop_name];
+			// Converts the Dynamo Types into simple JSON types
 			for( var prop_type in prop_val){
-				if(prop_type == 'N'){
-					obj[prop_name] = parseInt(item[prop_name][prop_type], 10);
-				} else {
-					obj[prop_name] = item[prop_name][prop_type];
+				var val = item[prop_name][prop_type];
+				// Check what we expected
+				var expected_prop = Cls._properties[prop_name];
+				var expected_type = null;
+				if(expected_prop){
+					expected_type = expected_prop.type_code;
 				}
+				if(prop_type == 'N'){
+					val = parseInt(val, 10);
+				} else if (expected_type == 'SS' && prop_type == 'S'){
+					val = [val];
+				}
+				obj[prop_name] = val;
 			}
 		}
 		return obj;
