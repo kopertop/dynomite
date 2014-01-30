@@ -242,7 +242,7 @@ function listIterator(model, callback, err, data, opts, continue_function){
  * @param model: The Model object to look for
  * @param opts: Additional options to send to the query function
  * @param callback: Callback to hit when the operation is completed
- * @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB_20120810.html#query-property
+ * @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#query-property
  */
 function query(model, opts, callback){
 	opts.TableName = model._table_name;
@@ -268,7 +268,7 @@ function query(model, opts, callback){
  * @param model: The model object to iterate over
  * @param opts: Additional options to send to the Scan function
  * @param callback: The callback function to be called with the results
- * @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB_20120810.html#scan-property
+ * @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#scan-property
  */
 function scan(model, opts, callback){
 	opts.TableName = model._table_name;
