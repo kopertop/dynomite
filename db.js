@@ -227,7 +227,9 @@ function listIterator(model, callback, err, data, opts, continue_function){
 			// Page
 			if(data.LastEvaluatedKey && !opts.Limit && continue_function){
 				opts.ExclusiveStartKey = data.LastEvaluatedKey;
-				continue_function(model, opts, callback);
+				setTimeout(function(){
+					continue_function(model, opts, callback);
+				}, 1000);
 			} else {
 				callback(null, null);
 			}
@@ -250,12 +252,26 @@ function query(model, opts, callback){
 		opts.KeyConditions = {};
 		Object.keys(opts.match).forEach(function(prop_name){
 			var prop = model._properties[prop_name];
-			var attr_value = {};
-			attr_value[prop.type_code] = opts.match[prop_name];
-			opts.KeyConditions[prop_name] = {
-				AttributeValueList: [attr_value],
-				ComparisonOperator: 'EQ'
-			};
+			var val = opts.match[prop_name];
+			if(typeof val == 'object'){
+				var attr_vals = [];
+				val.forEach(function(v){
+					var attr_val = {};
+					attr_val[prop.type_code] = v;
+					attr_vals.push(attr_val);
+				});
+				opts.KeyConditions[prop_name] = {
+					AttributeValueList: attr_vals,
+					ComparisonOperator: 'IN'
+				};
+			} else {
+				var attr_value = {};
+				attr_value[prop.type_code] = val;
+				opts.KeyConditions[prop_name] = {
+					AttributeValueList: [attr_value],
+					ComparisonOperator: 'EQ'
+				};
+			}
 		});
 		delete opts.match;
 	}
