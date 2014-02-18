@@ -301,6 +301,8 @@ function scan(model, opts, callback){
 
 /**
  * Define a new Model
+ * @param $type: An optional $type for this object, if specified, all
+ * 			Objects returned will have this property
  * @param table_name: The name of the DynamoDB Table
  * @param key: An array of HashKeyName and RangeKeyName,
  * 	or a single string if it's only a HashKey
@@ -320,6 +322,11 @@ function define(options){
 		Cls.prototype.onSave = options.onSave;
 	} else {
 		Cls.prototype.onSave = function(){};
+	}
+
+	if(options.$type){
+		Cls.$type = options.$type;
+		Cls.prototype.$type = Cls.$type;
 	}
 
 	// Allows an "onRemove" trigger to be called
@@ -425,6 +432,9 @@ function define(options){
 	 */
 	Cls.from_dynamo = function(item){
 		var obj = new Cls();
+		if(Cls.$type){
+			obj.$type = Cls.$type;
+		}
 		for (var prop_name in item){
 			var prop_val = item[prop_name];
 			// Converts the Dynamo Types into simple JSON types
