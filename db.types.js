@@ -31,6 +31,16 @@ function StringProperty(options){
 }
 util.inherits(StringProperty, Property);
 
+/**
+ * Reference Property, a link to another object
+ */
+function ReferenceProperty(options){
+	Property.call(this, options);
+	this.encode = JSON.stringify;
+	this.decode = JSON.parse;
+}
+util.inherits(ReferenceProperty, Property);
+
 
 /**
  * Number Property
@@ -76,6 +86,7 @@ util.inherits(SetProperty, Property);
 
 exports.Property = Property;
 exports.StringProperty = StringProperty;
+exports.ReferenceProperty = ReferenceProperty;
 exports.NumberProperty = NumberProperty;
 exports.DateTimeProperty = DateTimeProperty;
 exports.SetProperty = SetProperty;

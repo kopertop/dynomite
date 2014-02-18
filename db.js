@@ -157,6 +157,13 @@ function save(obj, callback, expected){
 				obj[prop_name] = prop_val;
 			}
 		}
+
+		// Encode if we have an encoder
+		if(properties[prop_name].encode){
+			prop_val = properties[prop_name].encode(prop_val);
+		}
+
+
 		if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || !(prop_val instanceof Array) || prop_val.length > 0)){
 			obj_values[prop_name] = {};
 			if(prop_type.length == 2 && prop_type[1] == 'S'){
@@ -448,6 +455,9 @@ function define(options){
 				var expected_type = null;
 				if(expected_prop){
 					expected_type = expected_prop.type_code;
+					if(expected_prop.decode !== undefined){
+						val = expected_prop.decode(val);
+					}
 				}
 				if(prop_type == 'N'){
 					val = parseInt(val, 10);
