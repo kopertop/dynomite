@@ -35,6 +35,12 @@ function dynamizeKey(model, id){
 		key[model._hashKeyName] = {};
 		key[model._hashKeyName][model._hashKeyType] =  id;
 	} else {
+		[model._hashKeyName, model._rangeKeyName].forEach(function(key_name, $index){
+			// Allow encoding each property
+			if(model._properties[key_name].encode){
+				id[$index] = model._properties[key_name].encode(id[$index]);
+			}
+		});
 		key[model._hashKeyName] = {};
 		key[model._hashKeyName][model._hashKeyType] =  id[0];
 		key[model._rangeKeyName] = {};
