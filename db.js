@@ -303,6 +303,7 @@ function scan(model, opts, callback){
  * Define a new Model
  * @param $type: An optional $type for this object, if specified, all
  * 			Objects returned will have this property
+ * @param mapping: An optional list of property mappings, { source: 'SourceParamName', dest: 'DestinationParamName' }
  * @param table_name: The name of the DynamoDB Table
  * @param key: An array of HashKeyName and RangeKeyName,
  * 	or a single string if it's only a HashKey
@@ -328,6 +329,8 @@ function define(options){
 		Cls.$type = options.$type;
 		Cls.prototype.$type = Cls.$type;
 	}
+	// Allow mappings
+	Cls.$paramMapping = options.mapping;
 
 	// Allows an "onRemove" trigger to be called
 	// when remove() is called
@@ -454,6 +457,14 @@ function define(options){
 				obj[prop_name] = val;
 			}
 		}
+
+		// Allow dynamic mapping of parametrs
+		if(Cls.$paramMapping){
+			Cls.$paramMapping.forEach(function(map){
+				obj[map.dest] = obj[map.source];
+			});
+		}
+
 		return obj;
 	};
 
