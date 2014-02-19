@@ -415,7 +415,6 @@ function define(options){
 				ret[prop_name.replace('$', '')] = val;
 			}
 		});
-		console.log('Simplified', ret);
 		return ret;
 	};
 
