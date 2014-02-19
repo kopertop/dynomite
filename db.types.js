@@ -36,7 +36,21 @@ util.inherits(StringProperty, Property);
  */
 function ReferenceProperty(options){
 	Property.call(this, options);
-	this.encode = JSON.stringify;
+
+	/**
+	 * Order is important with encoding, so we
+	 * make sure we always do $type, then $id
+	 */
+	this.encode = function(val){
+		if(val){
+			return JSON.stringify({
+				$type: val.$type,
+				$id: val.$id,
+			});
+		} else {
+			return val;
+		}
+	};
 	this.decode = JSON.parse;
 }
 util.inherits(ReferenceProperty, Property);
@@ -69,7 +83,7 @@ function DateTimeProperty(options){
 	this.type_code = 'N';
 	this.encode = function(val){
 		if(val && typeof val == 'object'){
-			val = val.getTime()/1000;
+			val = Math.round(val.getTime()/1000);
 		}
 		return val;
 	};
