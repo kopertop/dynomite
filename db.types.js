@@ -67,6 +67,18 @@ util.inherits(NumberProperty, Property);
 function DateTimeProperty(options){
 	Property.call(this, options);
 	this.type_code = 'N';
+	this.encode = function(val){
+		if(val && typeof val == 'object'){
+			val = val.getTime()/1000;
+		}
+		return val;
+	};
+	this.decode = function(val){
+		if(val && typeof val == 'number'){
+			val = new Date(val*1000);
+		}
+		return val;
+	};
 }
 util.inherits(DateTimeProperty, Property);
 
