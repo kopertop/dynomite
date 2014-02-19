@@ -337,6 +337,12 @@ function define(options){
 	} else {
 		Cls.prototype.onSave = function(){};
 	}
+	// Also adds in an afterSave trigger
+	if(typeof options.afterSave == 'function'){
+		Cls.prototype.afterSave = options.afterSave;
+	} else {
+		Cls.prototype.afterSave = function(){};
+	}
 
 	if(options.$type){
 		Cls.$type = options.$type;
@@ -368,9 +374,16 @@ function define(options){
 	Cls.lookup = function(id, callback, opts){
 		return lookup(Cls, id, callback, opts);
 	};
-	Cls.prototype.save = function(cb, expected){
-		this.onSave();
-		return save(this, cb, expected);
+	Cls.prototype.save = function(callback, expected){
+		var self = this;
+		self.onSave();
+		return save(self, function(err, data){
+			// Post-Save triggers
+			self.afterSave();
+			if(callback){
+				callback(err, data);
+			}
+		}, expected);
 	};
 	Cls.prototype.remove = function(callback){
 		this.onRemove();
@@ -383,6 +396,29 @@ function define(options){
 			return this[Cls._hashKeyName];
 		}
 	};
+
+	/**
+	 * Get a simplified version, for saving to CloudSearch
+	 */
+	Cls.prototype.getSimplified = function getSimplified(){
+		var self = this;
+		var ret = {};
+		Object.keys(Cls._properties).forEach(function(prop_name){
+			var prop = Cls._properties[prop_name];
+			var val = self[prop_name];
+			if(val){
+				// Allow the custom encode function to be fired here
+				if(prop.encode){
+					val = prop.encode(val);
+				}
+				// If the property name starts with a $, remove it
+				ret[prop_name.replace('$', '')] = val;
+			}
+		});
+		console.log('Simplified', ret);
+		return ret;
+	};
+
 	//
 	// Batch Fetch,
 	// takes a list of IDs
