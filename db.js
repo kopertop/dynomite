@@ -3,7 +3,7 @@
  *
  * @author Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, exports */
+/* global require, exports, module */
 var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
 var dynamodb = new AWS.DynamoDB();
@@ -42,9 +42,9 @@ function dynamizeKey(model, id){
 			}
 		});
 		key[model._hashKeyName] = {};
-		key[model._hashKeyName][model._hashKeyType] =  id[0];
+		key[model._hashKeyName][model._hashKeyType] =  String(id[0]);
 		key[model._rangeKeyName] = {};
-		key[model._rangeKeyName][model._rangeKeyType] =  id[1];
+		key[model._rangeKeyName][model._rangeKeyType] =  String(id[1]);
 		
 	}
 	return key;
@@ -323,6 +323,7 @@ function scan(model, opts, callback){
  * @param properties: A dictionary of property names and definitions
  */
 function define(options){
+	var History = require('./resources/history').History;
 	
 	var Cls = function(hashKey, rangeKey){
 		this[Cls._hashKeyName] = hashKey;
@@ -351,6 +352,9 @@ function define(options){
 	// Allow mappings
 	Cls.$paramMapping = options.mapping;
 
+	// Save all options
+	Cls.$options = options;
+
 	// Allows an "onRemove" trigger to be called
 	// when remove() is called
 	if(typeof options.onRemove == 'function'){
@@ -374,10 +378,39 @@ function define(options){
 	Cls.lookup = function(id, callback, opts){
 		return lookup(Cls, id, callback, opts);
 	};
-	Cls.prototype.save = function(callback, expected){
+	/**
+	 * @param callback: Callback to fire when the save is completed
+	 * @param expected: An optional condition of the save
+	 * @param log: Optional values to send to the History log:
+	 *		method
+	 *		url
+	 *		user
+	 *		comment
+	 *		transaction_id
+	 */
+	Cls.prototype.save = function(callback, expected, log){
 		var self = this;
 		self.onSave();
 		return save(self, function(err, data){
+			// Allow History Tracking
+			if( Cls.$options.track_history ){
+				// New objects wouldn't yet have a $hist object
+				var hist = self.$hist;
+				if(!hist){
+					hist = new History();
+				}
+				hist.obj = { $type: self.$type, $id: self.$id };
+				hist.new_obj = JSON.stringify(self.getSimplified());
+				// Allow adding in special options
+				if(log){
+					Object.keys(log).forEach(function(key){
+						hist[key] = log[key];
+					});
+				}
+				// Set the current date as the timestamp
+				hist.ts = new Date();
+				hist.save();
+			}
 			// Post-Save triggers
 			self.afterSave();
 			if(callback){
@@ -416,6 +449,14 @@ function define(options){
 			}
 		});
 		return ret;
+	};
+
+	/**
+	 * Lookup the History for this object
+	 */
+	Cls.prototype.getHistory = function getHistory(callback){
+		var id_string = JSON.stringify({ $type: this.$type, $id: this.$id, });
+		History.query({ match: { obj: id_string }, }, callback);
 	};
 
 	//
@@ -486,6 +527,7 @@ function define(options){
 		if(Cls.$type){
 			obj.$type = Cls.$type;
 		}
+
 		for (var prop_name in item){
 			var prop_val = item[prop_name];
 			// Converts the Dynamo Types into simple JSON types
@@ -515,6 +557,13 @@ function define(options){
 				obj[map.dest] = obj[map.source];
 			});
 		}
+
+		// Store the Original object for History tracking
+		if(Cls.$options.track_history){
+			obj.$hist = new History();
+			obj.$hist.old_obj = JSON.stringify(obj.getSimplified());
+		}
+
 
 		return obj;
 	};

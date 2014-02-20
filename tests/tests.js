@@ -3,18 +3,19 @@
  * Mocha tests for Dynmoite
  *
  */
-/* global require, beforeEach, describe, it */
+/* global require, before, after, beforeEach, describe, it */
 var assert = require('assert');
-var db = require('../db.js');
+var db = require('../db');
+var History = require('../resources/history').History;
 
 /**
  * Test class for use in these test cases
  */
 var Test = db.define({
 	tableName: 'Test',
-	key: '__id__',
+	key: '$id',
 	properties: {
-		__id__: new db.types.StringProperty(),
+		$id: new db.types.StringProperty(),
 		name: new db.types.StringProperty({verbose_name: 'My Name'}),
 		numeric: new db.types.NumberProperty({verbose_name: 'Some Number'}),
 		num_restricted: new db.types.NumberProperty({min: 1, max:10}),
@@ -29,6 +30,25 @@ var fake = db.define({
 		foo: new db.types.StringProperty()
 	}
 });
+
+// Redefine the Test object to track history
+var HistoryTest = db.define({
+	$type: 'HistoryTest',
+	tableName: 'Test',
+	key: '$id',
+	track_history: true,
+	properties: {
+		$id: new db.types.StringProperty(),
+		name: new db.types.StringProperty({verbose_name: 'My Name'}),
+		numeric: new db.types.NumberProperty({verbose_name: 'Some Number'}),
+		num_restricted: new db.types.NumberProperty({min: 1, max:10}),
+		stringSet: new db.types.SetProperty({ type: String, verbose_name: 'A list of strings'}),
+		numberSet: new db.types.SetProperty({ type: Number, verbose_name: 'A list of numbers'})
+	}
+});
+
+
+
 
 /**
  * DB Tests
@@ -124,9 +144,9 @@ describe('[DB]', function(){
 		}
 		var Special = db.define({
 			tableName: 'Test',
-			key: '__id__',
+			key: '$id',
 			properties: {
-				__id__: new db.types.StringProperty(),
+				$id: new db.types.StringProperty(),
 				special: new db.types.StringProperty({validate: specialFnc})
 			}
 		});
@@ -170,7 +190,7 @@ describe('[DB]', function(){
 						};
 						for(var x in data){
 							var item = data[x];
-							has[item.__id__] = true;
+							has[item.$id] = true;
 						}
 						assert(has.TestItem1);
 						assert(has.TestItem2);
@@ -182,5 +202,85 @@ describe('[DB]', function(){
 				});
 			});
 		});
+	});
+
+	/**
+	 * Check the history tracking
+	 */
+	describe('History', function(){
+		this.timeout(5000);
+		it('Should record a History record for a change', function(done){
+			var obj = new HistoryTest();
+			obj.$id = 'TestObject';
+			obj.name = 'First Name';
+			obj.stringSet = [ 'One', 'Two' ];
+			// Saves without a Comment
+			obj.save(function(){
+				// Lookup the History for this object
+				setTimeout(function(){
+					var logsFound = 0;
+					obj.getHistory(function(err, log){
+						if(log){
+							logsFound += 1;
+							assert(log.obj.$type == 'HistoryTest');
+							assert(log.obj.$id == 'TestObject');
+						} else {
+							console.log('Found', logsFound, 'logs');
+							assert(logsFound > 0);
+							done();
+						}
+					});
+				}, 500);
+			});
+		});
+
+		// Try updating an object
+		it('Should record an updated History event with the original object', function(done){
+			HistoryTest.lookup('TestObject', function(obj){
+				assert(obj);
+				obj.name = 'Second name';
+				obj.stringSet.push('three');
+				obj.save(function(){
+					// Check for the latest history object to include both 
+					setTimeout(function(){
+						var foundOurLog = false;
+						obj.getHistory(function(err, log){
+							if(!foundOurLog && log){
+								console.log('Got Log', log);
+								if(log.old_obj){
+									foundOurLog = true;
+									done();
+								}
+							}
+						});
+					}, 500);
+				});
+			});
+		});
+
+		// Clean up our test object and history
+		after(function(done){
+			HistoryTest.lookup('TestObject', function(obj){
+				if(obj){
+					// Remove the base object
+					obj.remove();
+
+					// Remove all history
+					obj.getHistory(function(err, log){
+						console.log('History', log);
+						if(log){
+							log.remove(function(){
+								console.log('Removed history log', log);
+							});
+						} else {
+							setTimeout(function(){
+								done();
+							}, 500);
+						}
+					});
+				}
+			});
+		});
+
 	});
 });

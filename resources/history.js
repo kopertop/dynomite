@@ -2,11 +2,9 @@
  * History/Log of a Change to a specific object
  *
  * This can be included on any single Save operation, if you enable
- * history tracking. History tracking can be enabled on a global level
- * by flipping the 'track_history' flag on the db object:
- *		var db = require('dynomite');
- *		db.track_history = true;
- * Or enabled on an individual object:
+ * history tracking.
+ *
+ * History must be explicitly enabled on the individual Class level:
  *		db.create({
  *			track_history: true,
  *			...
