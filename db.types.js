@@ -31,6 +31,30 @@ function StringProperty(options){
 }
 util.inherits(StringProperty, Property);
 
+/**
+ * Reference Property, a link to another object
+ */
+function ReferenceProperty(options){
+	Property.call(this, options);
+
+	/**
+	 * Order is important with encoding, so we
+	 * make sure we always do $type, then $id
+	 */
+	this.encode = function(val){
+		if(val){
+			return JSON.stringify({
+				$type: val.$type,
+				$id: val.$id,
+			});
+		} else {
+			return val;
+		}
+	};
+	this.decode = JSON.parse;
+}
+util.inherits(ReferenceProperty, Property);
+
 
 /**
  * Number Property
@@ -57,6 +81,18 @@ util.inherits(NumberProperty, Property);
 function DateTimeProperty(options){
 	Property.call(this, options);
 	this.type_code = 'N';
+	this.encode = function(val){
+		if(val && typeof val == 'object'){
+			val = Math.round(val.getTime()/1000);
+		}
+		return val;
+	};
+	this.decode = function(val){
+		if(val && typeof val == 'number'){
+			val = new Date(val*1000);
+		}
+		return val;
+	};
 }
 util.inherits(DateTimeProperty, Property);
 
@@ -76,6 +112,7 @@ util.inherits(SetProperty, Property);
 
 exports.Property = Property;
 exports.StringProperty = StringProperty;
+exports.ReferenceProperty = ReferenceProperty;
 exports.NumberProperty = NumberProperty;
 exports.DateTimeProperty = DateTimeProperty;
 exports.SetProperty = SetProperty;

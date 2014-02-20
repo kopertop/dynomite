@@ -3,7 +3,7 @@
  *
  * @author Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, exports */
+/* global require, exports, module */
 var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
 var dynamodb = new AWS.DynamoDB();
@@ -35,10 +35,16 @@ function dynamizeKey(model, id){
 		key[model._hashKeyName] = {};
 		key[model._hashKeyName][model._hashKeyType] =  id;
 	} else {
+		[model._hashKeyName, model._rangeKeyName].forEach(function(key_name, $index){
+			// Allow encoding each property
+			if(model._properties[key_name].encode){
+				id[$index] = model._properties[key_name].encode(id[$index]);
+			}
+		});
 		key[model._hashKeyName] = {};
-		key[model._hashKeyName][model._hashKeyType] =  id[0];
+		key[model._hashKeyName][model._hashKeyType] =  String(id[0]);
 		key[model._rangeKeyName] = {};
-		key[model._rangeKeyName][model._rangeKeyType] =  id[1];
+		key[model._rangeKeyName][model._rangeKeyType] =  String(id[1]);
 		
 	}
 	return key;
@@ -116,6 +122,10 @@ function convertValueToDynamo(val){
 	} else if (typeof val == 'object'){
 		if(val instanceof Date){
 			val = String(val.getTime());
+			// Prevent invalid dates
+			if(val == 'NaN'){
+				val = '0';
+			}
 		}
 	}
 	return val;
@@ -153,6 +163,13 @@ function save(obj, callback, expected){
 				obj[prop_name] = prop_val;
 			}
 		}
+
+		// Encode if we have an encoder
+		if(properties[prop_name].encode){
+			prop_val = properties[prop_name].encode(prop_val);
+		}
+
+
 		if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || !(prop_val instanceof Array) || prop_val.length > 0)){
 			obj_values[prop_name] = {};
 			if(prop_type.length == 2 && prop_type[1] == 'S'){
@@ -178,7 +195,8 @@ function save(obj, callback, expected){
 	// Save
 	dynamodb.putItem(args, function(err, data){
 		if(err){
-			console.error(err);
+			console.error(err, data);
+			console.log('ERROR WITH', args);
 		}
 		if(callback){
 			callback(err, data);
@@ -222,7 +240,11 @@ function listIterator(model, callback, err, data, opts, continue_function){
 			// Page
 			if(data.LastEvaluatedKey && !opts.Limit && continue_function){
 				opts.ExclusiveStartKey = data.LastEvaluatedKey;
-				continue_function(model, opts, callback);
+				setTimeout(function(){
+					continue_function(model, opts, callback);
+				}, 1000);
+			} else {
+				callback(null, null);
 			}
 		} else {
 			callback(null, null);
@@ -235,7 +257,7 @@ function listIterator(model, callback, err, data, opts, continue_function){
  * @param model: The Model object to look for
  * @param opts: Additional options to send to the query function
  * @param callback: Callback to hit when the operation is completed
- * @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB_20120810.html#query-property
+ * @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#query-property
  */
 function query(model, opts, callback){
 	opts.TableName = model._table_name;
@@ -243,12 +265,26 @@ function query(model, opts, callback){
 		opts.KeyConditions = {};
 		Object.keys(opts.match).forEach(function(prop_name){
 			var prop = model._properties[prop_name];
-			var attr_value = {};
-			attr_value[prop.type_code] = opts.match[prop_name];
-			opts.KeyConditions[prop_name] = {
-				AttributeValueList: [attr_value],
-				ComparisonOperator: 'EQ'
-			};
+			var val = opts.match[prop_name];
+			if(typeof val == 'object'){
+				var attr_vals = [];
+				val.forEach(function(v){
+					var attr_val = {};
+					attr_val[prop.type_code] = v;
+					attr_vals.push(attr_val);
+				});
+				opts.KeyConditions[prop_name] = {
+					AttributeValueList: attr_vals,
+					ComparisonOperator: 'IN'
+				};
+			} else {
+				var attr_value = {};
+				attr_value[prop.type_code] = val;
+				opts.KeyConditions[prop_name] = {
+					AttributeValueList: [attr_value],
+					ComparisonOperator: 'EQ'
+				};
+			}
 		});
 		delete opts.match;
 	}
@@ -261,7 +297,7 @@ function query(model, opts, callback){
  * @param model: The model object to iterate over
  * @param opts: Additional options to send to the Scan function
  * @param callback: The callback function to be called with the results
- * @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB_20120810.html#scan-property
+ * @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#scan-property
  */
 function scan(model, opts, callback){
 	opts.TableName = model._table_name;
@@ -278,12 +314,16 @@ function scan(model, opts, callback){
 
 /**
  * Define a new Model
+ * @param $type: An optional $type for this object, if specified, all
+ * 			Objects returned will have this property
+ * @param mapping: An optional list of property mappings, { source: 'SourceParamName', dest: 'DestinationParamName' }
  * @param table_name: The name of the DynamoDB Table
  * @param key: An array of HashKeyName and RangeKeyName,
  * 	or a single string if it's only a HashKey
  * @param properties: A dictionary of property names and definitions
  */
 function define(options){
+	var History = require('./resources/history').History;
 	
 	var Cls = function(hashKey, rangeKey){
 		this[Cls._hashKeyName] = hashKey;
@@ -298,6 +338,22 @@ function define(options){
 	} else {
 		Cls.prototype.onSave = function(){};
 	}
+	// Also adds in an afterSave trigger
+	if(typeof options.afterSave == 'function'){
+		Cls.prototype.afterSave = options.afterSave;
+	} else {
+		Cls.prototype.afterSave = function(){};
+	}
+
+	if(options.$type){
+		Cls.$type = options.$type;
+		Cls.prototype.$type = Cls.$type;
+	}
+	// Allow mappings
+	Cls.$paramMapping = options.mapping;
+
+	// Save all options
+	Cls.$options = options;
 
 	// Allows an "onRemove" trigger to be called
 	// when remove() is called
@@ -322,9 +378,45 @@ function define(options){
 	Cls.lookup = function(id, callback, opts){
 		return lookup(Cls, id, callback, opts);
 	};
-	Cls.prototype.save = function(cb, expected){
-		this.onSave();
-		return save(this, cb, expected);
+	/**
+	 * @param callback: Callback to fire when the save is completed
+	 * @param expected: An optional condition of the save
+	 * @param log: Optional values to send to the History log:
+	 *		method
+	 *		url
+	 *		user
+	 *		comment
+	 *		transaction_id
+	 */
+	Cls.prototype.save = function(callback, expected, log){
+		var self = this;
+		self.onSave();
+		return save(self, function(err, data){
+			// Allow History Tracking
+			if( Cls.$options.track_history ){
+				// New objects wouldn't yet have a $hist object
+				var hist = self.$hist;
+				if(!hist){
+					hist = new History();
+				}
+				hist.obj = { $type: self.$type, $id: self.$id };
+				hist.new_obj = JSON.stringify(self.getSimplified());
+				// Allow adding in special options
+				if(log){
+					Object.keys(log).forEach(function(key){
+						hist[key] = log[key];
+					});
+				}
+				// Set the current date as the timestamp
+				hist.ts = new Date();
+				hist.save();
+			}
+			// Post-Save triggers
+			self.afterSave();
+			if(callback){
+				callback(err, data);
+			}
+		}, expected);
 	};
 	Cls.prototype.remove = function(callback){
 		this.onRemove();
@@ -337,6 +429,36 @@ function define(options){
 			return this[Cls._hashKeyName];
 		}
 	};
+
+	/**
+	 * Get a simplified version, for saving to CloudSearch
+	 */
+	Cls.prototype.getSimplified = function getSimplified(){
+		var self = this;
+		var ret = {};
+		Object.keys(Cls._properties).forEach(function(prop_name){
+			var prop = Cls._properties[prop_name];
+			var val = self[prop_name];
+			if(val){
+				// Allow the custom encode function to be fired here
+				if(prop.encode){
+					val = prop.encode(val);
+				}
+				// If the property name starts with a $, remove it
+				ret[prop_name.replace('$', '')] = val;
+			}
+		});
+		return ret;
+	};
+
+	/**
+	 * Lookup the History for this object
+	 */
+	Cls.prototype.getHistory = function getHistory(callback){
+		var id_string = JSON.stringify({ $type: this.$type, $id: this.$id, });
+		History.query({ match: { obj: id_string }, }, callback);
+	};
+
 	//
 	// Batch Fetch,
 	// takes a list of IDs
@@ -402,16 +524,47 @@ function define(options){
 	 */
 	Cls.from_dynamo = function(item){
 		var obj = new Cls();
+		if(Cls.$type){
+			obj.$type = Cls.$type;
+		}
+
 		for (var prop_name in item){
 			var prop_val = item[prop_name];
+			// Converts the Dynamo Types into simple JSON types
 			for( var prop_type in prop_val){
-				if(prop_type == 'N'){
-					obj[prop_name] = parseInt(item[prop_name][prop_type], 10);
-				} else {
-					obj[prop_name] = item[prop_name][prop_type];
+				var val = item[prop_name][prop_type];
+				// Check what we expected
+				var expected_prop = Cls._properties[prop_name];
+				var expected_type = null;
+				if(expected_prop){
+					expected_type = expected_prop.type_code;
+					if(expected_prop.decode !== undefined){
+						val = expected_prop.decode(val);
+					}
 				}
+				if(prop_type == 'N'){
+					val = parseInt(val, 10);
+				} else if (expected_type == 'SS' && prop_type == 'S'){
+					val = [val];
+				}
+				obj[prop_name] = val;
 			}
 		}
+
+		// Allow dynamic mapping of parametrs
+		if(Cls.$paramMapping){
+			Cls.$paramMapping.forEach(function(map){
+				obj[map.dest] = obj[map.source];
+			});
+		}
+
+		// Store the Original object for History tracking
+		if(Cls.$options.track_history){
+			obj.$hist = new History();
+			obj.$hist.old_obj = JSON.stringify(obj.getSimplified());
+		}
+
+
 		return obj;
 	};
 
