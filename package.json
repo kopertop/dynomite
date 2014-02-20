@@ -13,9 +13,15 @@
 	"dependencies": {
 		"aws-sdk": ">=1.8.1",
 		"node-uuid": "*",
+		"grunt": "*",
+		"grunt-contrib-jshint": "*",
+		"grunt-mocha-istanbul": "*",
 		"thirty-two": "*"
 	},
-	"devDependencies": { "mocha": "*" },
+	"devDependencies": {
+		"mocha": "*",
+		"should": "*"
+	},
 	"keywords": [
 		"data",
 		"model"
