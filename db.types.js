@@ -125,6 +125,7 @@ util.inherits(SetProperty, Property);
 exports.Property = Property;
 exports.StringProperty = StringProperty;
 exports.ReferenceProperty = ReferenceProperty;
+exports.JSONProperty = JSONProperty;
 exports.NumberProperty = NumberProperty;
 exports.DateTimeProperty = DateTimeProperty;
 exports.SetProperty = SetProperty;
