@@ -55,6 +55,18 @@ function ReferenceProperty(options){
 }
 util.inherits(ReferenceProperty, Property);
 
+/**
+ * JSON Property, Generic Property that can take anything
+ * that can be passed through JSON.stringify and JSON.parse
+ */
+function JSONProperty(options){
+	Property.call(this, options);
+
+	this.encode = JSON.stringify;
+	this.decode = JSON.parse;
+}
+util.inherits(JSONProperty, Property);
+
 
 /**
  * Number Property
@@ -113,6 +125,7 @@ util.inherits(SetProperty, Property);
 exports.Property = Property;
 exports.StringProperty = StringProperty;
 exports.ReferenceProperty = ReferenceProperty;
+exports.JSONProperty = JSONProperty;
 exports.NumberProperty = NumberProperty;
 exports.DateTimeProperty = DateTimeProperty;
 exports.SetProperty = SetProperty;

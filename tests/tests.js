@@ -20,7 +20,8 @@ var Test = db.define({
 		numeric: new db.types.NumberProperty({verbose_name: 'Some Number'}),
 		num_restricted: new db.types.NumberProperty({min: 1, max:10}),
 		stringSet: new db.types.SetProperty({ type: String, verbose_name: 'A list of strings'}),
-		numberSet: new db.types.SetProperty({ type: Number, verbose_name: 'A list of numbers'})
+		numberSet: new db.types.SetProperty({ type: Number, verbose_name: 'A list of numbers'}),
+		jsonProperty: new db.types.JSONProperty(),
 	}
 });
 var fake = db.define({
@@ -203,6 +204,38 @@ describe('[DB]', function(){
 			});
 		});
 	});
+
+	/**
+	 * Tests out the JSON Property
+	 */
+	it('Should encode and decode our complex JSON object', function(done){
+		this.timeout(15000);
+		var obj = new Test('TestJSONObject');
+		obj.name = 'Test JSON Object';
+		obj.jsonProperty = [ [ 'Some Item', 'With Stuff', 0], [123, 'Some Other Item', 'With Things'], 'Some Basic Item', { some: 'Object', other: ['Complex Things', 123] }, 19, 0, 45];
+		obj.save(function(err, data){
+			assert(!err);
+			// Lookup the item and make sure the JSON property is the same
+			Test.lookup(obj.$id, function(refObj){
+				console.log('Got Object', refObj);
+				assert(refObj);
+				assert(refObj.jsonProperty);
+				assert(refObj.jsonProperty[0][0] == 'Some Item');
+				assert(refObj.jsonProperty[0][1] == 'With Stuff');
+				assert(refObj.jsonProperty[0][2] === 0);
+				assert(refObj.jsonProperty[2] == 'Some Basic Item');
+				assert(refObj.jsonProperty[3].some ==  'Object');
+				assert(refObj.jsonProperty[3].other[0] ==  'Complex Things');
+				assert(refObj.jsonProperty[3].other[1] ==  123);
+				assert(refObj.jsonProperty[4] == 19);
+				assert(refObj.jsonProperty[5] === 0);
+				assert(refObj.jsonProperty[6] == 45);
+				done();
+			});
+		});
+	});
+
+
 
 	/**
 	 * Check the history tracking

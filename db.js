@@ -390,6 +390,20 @@ function define(options){
 	 */
 	Cls.prototype.save = function(callback, expected, log){
 		var self = this;
+
+		if(!log){
+			log = {};
+		}
+
+		// Allow $comment, $user, and $transaction_id
+		// to be passed in as regular arguments.
+		['$comment', '$user', '$transaction_id'].forEach(function(prop_name){
+			if(self[prop_name]){
+				log[prop_name.substring(1)] = self[prop_name];
+				delete self[prop_name];
+			}
+		});
+
 		self.onSave();
 		return save(self, function(err, data){
 			// Allow History Tracking
@@ -407,6 +421,7 @@ function define(options){
 						hist[key] = log[key];
 					});
 				}
+
 				// Set the current date as the timestamp
 				hist.ts = new Date();
 				hist.save();
