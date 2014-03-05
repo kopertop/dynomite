@@ -367,6 +367,9 @@ function define(options){
 	} else {
 		Cls.prototype.afterSave = function(){};
 	}
+	// And allow a beforeSave trigger
+	Cls.prototype.beforeSave = options.beforeSave;
+
 
 	if(options.$type){
 		Cls.$type = options.$type;
@@ -427,34 +430,46 @@ function define(options){
 			}
 		});
 
-		self.onSave();
-		return save(self, function(err, data){
-			// Allow History Tracking
-			if( Cls.$options.track_history ){
-				// New objects wouldn't yet have a $hist object
-				var hist = self.$hist;
-				if(!hist){
-					hist = new History();
-				}
-				hist.obj = { $type: self.$type, $id: self.$id };
-				hist.new_obj = JSON.stringify(self.getSimplified());
-				// Allow adding in special options
-				if(log){
-					Object.keys(log).forEach(function(key){
-						hist[key] = log[key];
-					});
-				}
+		function doSaveOperation(){
+			self.onSave();
+			return save(self, function(err, data){
+				// Allow History Tracking
+				if( Cls.$options.track_history ){
+					// New objects wouldn't yet have a $hist object
+					var hist = self.$hist;
+					if(!hist){
+						hist = new History();
+					}
+					hist.obj = { $type: self.$type, $id: self.$id };
+					hist.new_obj = JSON.stringify(self.getSimplified());
+					// Allow adding in special options
+					if(log){
+						Object.keys(log).forEach(function(key){
+							hist[key] = log[key];
+						});
+					}
 
-				// Set the current date as the timestamp
-				hist.ts = new Date();
-				hist.save();
-			}
-			// Post-Save triggers
-			self.afterSave();
-			if(callback){
-				callback(err, data);
-			}
-		}, expected);
+					// Set the current date as the timestamp
+					hist.ts = new Date();
+					hist.save();
+				}
+				// Post-Save triggers
+				self.afterSave();
+				if(callback){
+					callback(err, data);
+				}
+			}, expected);
+		}
+
+
+		// Allow before Save triggers, which
+		// allows us to intercept, block, and run
+		// asychronously
+		if(typeof self.beforeSave == 'function'){
+			self.beforeSave(doSaveOperation);
+		} else {
+			doSaveOperation();
+		}
 	};
 	Cls.prototype.remove = function(callback){
 		this.onRemove();
