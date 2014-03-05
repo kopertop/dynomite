@@ -1,20 +1,20 @@
 /*
  * Universal Identifiers. This allows us to produce IDs
  * for anything, including things requiring sequential IDs
- * such as newstex IDs, as well as just anything that 
+ * such as newstex IDs, as well as just anything that
  * requires a unique identifier, like a Story ID
  *
  * @author: Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, exports */
+/* global require, module */
 var db = require('../db.js');
 
 var UID = db.define({
 	tableName: 'UID',
-	key: ['__type__', '__id__'],
+	key: ['$type', '$id'],
 	properties: {
-		__type__: new db.types.StringProperty(),
-		__id__: new db.types.NumberProperty(),
+		'$type': new db.types.StringProperty(),
+		'$id': new db.types.NumberProperty(),
 		name: new db.types.StringProperty({verbose_name: 'Object Name'}),
 		created_at: new db.types.DateTimeProperty({verbose_name: 'Created At', auto_now_add: true})
 	}
@@ -95,4 +95,4 @@ UID.next = function(type, callback, properties){
 	});
 };
 
-exports.UID = UID;
+module.exports = UID;
