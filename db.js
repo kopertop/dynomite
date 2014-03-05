@@ -205,6 +205,29 @@ function save(obj, callback, expected){
 }
 
 /**
+ * Calls the UpdateItem API:
+ * http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#updateItem-property
+ *
+ * @param obj: The object to update
+ * @param updates: The "AttributeUpdates" to send
+ * @param callback: The callback to fire with the results of this update operation
+ * @param expected: Optional "Expected" to send
+ */
+function updateItem(obj, updates, callback, expected){
+	var args = {
+		TableName: obj.constructor._table_name,
+		Key: dynamizeKey(obj.constructor, obj.getID()),
+		AttributeUpdates: updates,
+		ReturnValues: 'ALL_NEW',
+	};
+	if(expected){
+		args.Expected = expected;
+	}
+	dynamodb.updateItem(args, callback);
+}
+
+
+/**
  * Delete an item from DynamoDB
  * @param obj: The object to remove
  * @param callback: An optional callback to call when the operation succeeds, or fails
@@ -437,6 +460,32 @@ function define(options){
 		this.onRemove();
 		return remove(this, callback);
 	};
+
+	/**
+	 * Allows incrementing a value
+	 * @param props: An object mapping of property_name: value to add
+	 * @param callback: An optional function to call back with the results
+	 */
+	Cls.prototype.add = function objAdd(props, callback){
+		var self = this;
+		var AttributeUpdates = {};
+		Object.keys(props).forEach(function(prop_name){
+			if(Cls._properties[prop_name]){
+				var val = props[prop_name];
+				val = convertValueToDynamo(val);
+				var DynamoValue = {};
+				DynamoValue[Cls._properties[prop_name].type_code] = val;
+				AttributeUpdates[prop_name] = {
+					Action: 'ADD',
+					Value: DynamoValue,
+				};
+				updateItem(self, AttributeUpdates, callback);
+			} else {
+				throw new Error('Property not found', prop_name);
+			}
+		});
+	};
+
 	Cls.prototype.getID = function(){
 		if(Cls._rangeKeyName){
 			return [this[Cls._hashKeyName], this[Cls._rangeKeyName]];
