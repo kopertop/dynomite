@@ -5,7 +5,7 @@
  */
 /* global require, beforeEach, it, describe */
 var assert = require('assert');
-var UID = require('../resources/uid.js').UID;
+var UID = require('../resources/uid.js');
 
 beforeEach(function(){
 	console.log('\n======================================================================');
@@ -19,7 +19,7 @@ describe('[UID]', function(){
 			// Makes sure the object is returned
 			assert(obj);
 			// And has an ID
-			assert(obj.__id__);
+			assert(obj.$id);
 			// And the created_at was automatically set
 			assert(obj.created_at);
 			// And lastly, that our custom property was set
