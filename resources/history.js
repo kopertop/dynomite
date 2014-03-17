@@ -26,7 +26,7 @@ var History = db.define({
 	track_history: false,
 	properties: {
 		obj: new db.types.ReferenceProperty({ verbose_name: 'Object Reference' }),
-		ts: new db.types.DateTimeProperty({ verbose_name: 'Change Created At' }),
+		ts: new db.types.DateTimeProperty({ verbose_name: 'Change Created At', auto_now_add: true }),
 		method: new db.types.StringProperty({ verbose_name: 'Method' }),
 		url: new db.types.StringProperty({ verbose_name: 'url' }),
 		user: new db.types.ReferenceProperty({ verbose_name: 'User' }),
