@@ -441,7 +441,7 @@ function define(options){
 						hist = new History();
 					}
 					hist.obj = { $type: self.$type, $id: self.$id };
-					hist.new_obj = JSON.stringify(self.getSimplified());
+					hist.new_obj = self.getSimplified();
 					// Allow adding in special options
 					if(log){
 						Object.keys(log).forEach(function(key){
@@ -640,7 +640,7 @@ function define(options){
 		// Store the Original object for History tracking
 		if(Cls.$options.track_history){
 			obj.$hist = new History();
-			obj.$hist.old_obj = JSON.stringify(obj.getSimplified());
+			obj.$hist.old_obj = obj.getSimplified();
 		}
 
 
