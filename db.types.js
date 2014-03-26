@@ -42,16 +42,40 @@ function ReferenceProperty(options){
 	 * make sure we always do $type, then $id
 	 */
 	this.encode = function(val){
-		if(val){
+		if(!val){
+			return val;
+		}
+
+		// Allow "Simple" reference properties
+		// which only encode to the ID string
+		if(this.options.simple){
+			return val.$id;
+		} else {
 			return JSON.stringify({
 				$type: val.$type,
 				$id: val.$id,
 			});
-		} else {
-			return val;
 		}
 	};
-	this.decode = JSON.parse;
+
+	/**
+	 * Allow for decoding of both Simple and Normal
+	 * Reference Properties
+	 */
+	this.decode = function decodeReferenceProperty(val){
+		if(!val){
+			return val;
+		}
+
+		// A "Simple" reference property
+		// only contains the ID of the object,
+		// not the full object type and ID JSON string
+		if(this.options.simple){
+			return { $type: this.options.$type, $id: val };
+		} else {
+			return JSON.parse(val);
+		}
+	};
 }
 util.inherits(ReferenceProperty, Property);
 
