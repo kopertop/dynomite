@@ -43,6 +43,12 @@ describe('db.types', function(){
 			assert.equal(output, null);
 		});
 
+		it('Should return an empty list being a null value', function(){
+			var prop = new types.ListProperty({ verbose_name: 'Some List Property'});
+			var output = prop.encode([]);
+			assert.equal(output, null);
+		});
+
 	});
 
 });

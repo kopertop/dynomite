@@ -158,6 +158,9 @@ function ListProperty(options){
 		if(val !== null && typeof val == 'object' && typeof val.join == 'function'){
 			val = val.join(GROUP_SEPARATOR);
 		}
+		if(!val || val.length === 0){
+			val = null;
+		}
 		return val;
 	};
 
