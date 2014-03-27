@@ -155,7 +155,7 @@ function ListProperty(options){
 	this.type_code = 'S';
 
 	this.encode = function encodeList(val){
-		if(typeof val == 'object' && typeof val.join == 'function'){
+		if(val !== null && typeof val == 'object' && typeof val.join == 'function'){
 			val = val.join(GROUP_SEPARATOR);
 		}
 		return val;
