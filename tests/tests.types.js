@@ -27,5 +27,17 @@ describe('db.types', function(){
 
 	});
 
+	// Ordered List Property
+	describe('List Property', function(){
+		it('Should properly encode a RefObj to a JSON string with just $id and $type', function(){
+			var testList = ['A', 1, 5, 'C', 'A', 0, 19, 'Z'];
+			var prop = new types.ListProperty({ verbose_name: 'Some List Property'});
+			var output = prop.encode(testList);
+			assert.equal(typeof output, 'string');
+			assert.deepEqual(prop.decode(output), testList);
+		});
+
+	});
+
 });
 

@@ -146,6 +146,31 @@ function SetProperty(options){
 }
 util.inherits(SetProperty, Property);
 
+/**
+ * List (Ordered) Property
+ */
+var GROUP_SEPARATOR = '\x1d';
+function ListProperty(options){
+	Property.call(this, options);
+	this.type_code = 'S';
+
+	this.encode = function encodeList(val){
+		if(typeof val == 'object' && typeof val.join == 'function'){
+			val = val.join(GROUP_SEPARATOR);
+		}
+		return val;
+	};
+
+	this.decode = function decodeList(val){
+		if(typeof val == 'string'){
+			val = val.split(GROUP_SEPARATOR);
+		}
+		return val;
+	};
+}
+util.inherits(ListProperty, Property);
+
+
 exports.Property = Property;
 exports.StringProperty = StringProperty;
 exports.ReferenceProperty = ReferenceProperty;
@@ -153,3 +178,4 @@ exports.JSONProperty = JSONProperty;
 exports.NumberProperty = NumberProperty;
 exports.DateTimeProperty = DateTimeProperty;
 exports.SetProperty = SetProperty;
+exports.ListProperty = ListProperty;
