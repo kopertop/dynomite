@@ -11,6 +11,7 @@ describe('db.types', function(){
 	// Reference property
 	describe('Reference Property', function(){
 		var RefObj = { $id: 'SOME-ID', $type: 'SOME-TYPE', name: 'My Name', foo: [1,2,3] };
+
 		it('Should properly encode a RefObj to a JSON string with just $id and $type', function(){
 			var prop = new types.ReferenceProperty({ verbose_name: 'Some Reference Property' });
 			var output = prop.decode(prop.encode(RefObj));
@@ -29,26 +30,42 @@ describe('db.types', function(){
 
 	// Ordered List Property
 	describe('List Property', function(){
+		var prop = new types.ListProperty({ verbose_name: 'Some List Property'});
+
 		it('Should properly encode a ListProperty and return it in the same order', function(){
 			var testList = ['A', 1, 5, 'C', 'A', 0, 19, 'Z'];
-			var prop = new types.ListProperty({ verbose_name: 'Some List Property'});
 			var output = prop.encode(testList);
 			assert.equal(typeof output, 'string');
 			assert.deepEqual(prop.decode(output), testList);
 		});
 
 		it('Should handle a null value', function(){
-			var prop = new types.ListProperty({ verbose_name: 'Some List Property'});
 			var output = prop.encode(null);
 			assert.equal(output, null);
 		});
 
 		it('Should return an empty list being a null value', function(){
-			var prop = new types.ListProperty({ verbose_name: 'Some List Property'});
 			var output = prop.encode([]);
 			assert.equal(output, null);
 		});
 
+	});
+
+	// DateTime Property
+	describe('DateTime Property', function(){
+		var prop = new types.DateTimeProperty({ verbose_name: 'Some DateTime Property'});
+
+		it('Should decode a string-based date-time property to a real Date object', function(){
+			var testString = '2014-03-27T21:02:09.894Z';
+			var output = prop.decode(testString);
+			assert.equal(typeof output, 'object');
+			assert.equal(prop.encode(output), 1395954129);
+		});
+
+		it('Should decode a numeric value back to a date value', function(){
+			var output = prop.decode(1395954129);
+			assert.deepEqual(output, new Date(1395954129000));
+		});
 	});
 
 });
