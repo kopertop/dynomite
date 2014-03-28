@@ -124,8 +124,12 @@ function DateTimeProperty(options){
 		return val;
 	};
 	this.decode = function(val){
-		if(val && typeof val == 'number'){
-			val = new Date(val*1000);
+		if(val){
+			if(typeof val == 'number'){
+				val = new Date(val*1000);
+			} else if (typeof val == 'string'){
+				val = new Date(val);
+			}
 		}
 		return val;
 	};

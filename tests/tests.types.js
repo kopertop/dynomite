@@ -59,12 +59,12 @@ describe('db.types', function(){
 			var testString = '2014-03-27T21:02:09.894Z';
 			var output = prop.decode(testString);
 			assert.equal(typeof output, 'object');
-			assert.equal(prop.encode(output), 1395954129);
+			assert.equal(prop.encode(output), 1395954130);
 		});
 
 		it('Should decode a numeric value back to a date value', function(){
-			var output = prop.decode(1395954129);
-			assert.deepEqual(output, new Date(1395954129000));
+			var output = prop.decode(1395954130);
+			assert.deepEqual(output, new Date(1395954130000));
 		});
 	});
 
