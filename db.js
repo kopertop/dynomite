@@ -617,15 +617,18 @@ function define(options){
 				var expected_type = null;
 				if(expected_prop){
 					expected_type = expected_prop.type_code;
-					if(expected_prop.decode !== undefined){
-						val = expected_prop.decode(val);
-					}
 				}
+				// Decode into the Base Type
 				if(prop_type == 'N'){
 					val = parseInt(val, 10);
 				} else if (expected_type == 'SS' && prop_type == 'S'){
 					val = [val];
 				}
+				// Decode into the JS type
+				if(expected_prop && expected_prop.decode !== undefined){
+					val = expected_prop.decode(val);
+				}
+
 				obj[prop_name] = val;
 			}
 		}
