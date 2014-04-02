@@ -70,6 +70,7 @@ function request(options, callback, endpoint){
  */
 function SearchConnection(args){
 	this.endpoint = args.endpoint;
+	this.version = args.version || '2011-02-01';
 }
 SearchConnection.prototype.search = function (args, callback){
 	// CloudSearch doesn't support multiple arguments in a REST style format,
@@ -85,7 +86,7 @@ SearchConnection.prototype.search = function (args, callback){
 	});
 	var options = {
 		host: this.endpoint,
-		path: '/2011-02-01/search?' + querystring.stringify(simplified_args)
+		path: '/' + this.version + '/search?' + querystring.stringify(simplified_args)
 	};
 
 	request(options, callback, this.endpoint).end();
@@ -124,6 +125,7 @@ exports.SearchConnection = SearchConnection;
 function DocumentConnection(args){
 	this.endpoint = args.endpoint;
 	this.batch = [];
+	this.version = args.version || '2011-02-01';
 }
 
 /**
@@ -177,7 +179,7 @@ DocumentConnection.prototype.commit = function (callback){
 
 	var options = {
 		host: this.endpoint,
-		path: '/2011-02-01/documents/batch',
+		path: '/' + this.version + '/documents/batch',
 		headers: {
 			'Content-Type': 'application/json',
 			'Content-Length': Buffer.byteLength(sdf)
