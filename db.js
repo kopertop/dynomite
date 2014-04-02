@@ -435,6 +435,17 @@ function define(options){
 			return save(self, function(err, data){
 				// Allow History Tracking
 				if( Cls.$options.track_history ){
+					// This parameter Mapping is REQUIRED to make history tracking work
+					if(Cls.$type){
+						self.$type = Cls.$type;
+					}
+					// Allow dynamic mapping of parametrs
+					if(Cls.$paramMapping){
+						Cls.$paramMapping.forEach(function(map){
+							self[map.dest] = self[map.source];
+						});
+					}
+
 					// New objects wouldn't yet have a $hist object
 					var hist = self.$hist;
 					if(!hist){
