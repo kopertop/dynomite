@@ -118,8 +118,12 @@ function DateTimeProperty(options){
 	Property.call(this, options);
 	this.type_code = 'N';
 	this.encode = function(val){
-		if(val && typeof val == 'object'){
-			val = Math.round(val.getTime()/1000);
+		if(val){
+			if(typeof val == 'string'){
+				val = Math.round(new Date(val).getTime()/1000);
+			} else if(typeof val == 'object'){
+				val = Math.round(val.getTime()/1000);
+			}
 		}
 		return val;
 	};

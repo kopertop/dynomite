@@ -54,9 +54,9 @@ describe('db.types', function(){
 	// DateTime Property
 	describe('DateTime Property', function(){
 		var prop = new types.DateTimeProperty({ verbose_name: 'Some DateTime Property'});
+		var testString = '2014-03-27T21:02:09.894Z';
 
 		it('Should decode a string-based date-time property to a real Date object', function(){
-			var testString = '2014-03-27T21:02:09.894Z';
 			var output = prop.decode(testString);
 			assert.equal(typeof output, 'object');
 			assert.equal(prop.encode(output), 1395954130);
@@ -66,6 +66,11 @@ describe('db.types', function(){
 			var output = prop.decode(1395954130);
 			assert.deepEqual(output, new Date(1395954130000));
 		});
+
+		it('Should encode a string value into a numeric value', function(){
+			assert.equal(prop.encode(testString), 1395954130);
+		});
+
 	});
 
 });
