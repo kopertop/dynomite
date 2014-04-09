@@ -14,6 +14,7 @@ var util = require('util');
 function Property(options){
 	this.options = options;
 	this.type_code = 'S';
+	this.encode_for_search = true;
 	if(options && options.validate){
 		this.validate = options.validate;
 	} else {
@@ -161,6 +162,7 @@ var GROUP_SEPARATOR = '\x1d';
 function ListProperty(options){
 	Property.call(this, options);
 	this.type_code = 'S';
+	this.encode_for_search = false; // Do not allow encoding for search indexing
 
 	this.encode = function encodeList(val){
 		if(val !== null && typeof val == 'object' && typeof val.join == 'function'){

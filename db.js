@@ -531,7 +531,7 @@ function define(options){
 			var val = self[prop_name];
 			if(val){
 				// Allow the custom encode function to be fired here
-				if(prop.encode){
+				if(prop.encode_for_search && prop.encode){
 					val = prop.encode(val);
 				}
 				// If the property name starts with a $, remove it
