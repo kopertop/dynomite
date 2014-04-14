@@ -637,7 +637,11 @@ function define(options){
 				}
 				// Decode into the JS type
 				if(expected_prop && expected_prop.decode !== undefined){
-					val = expected_prop.decode(val);
+					try {
+						val = expected_prop.decode(val);
+					} catch (e) {
+						console.error('Could not decode property', prop_name, val, e);
+					}
 				}
 
 				obj[prop_name] = val;
