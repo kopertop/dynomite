@@ -113,6 +113,38 @@ function NumberProperty(options){
 util.inherits(NumberProperty, Property);
 
 /**
+ * Boolean Property
+ */
+function BooleanProperty(options){
+	Property.call(this, options);
+	this.type_code = 'N';
+
+	this.encode = function encodeBoolean(val){
+		if(val){
+			return 1;
+		} else if (val !== undefined) {
+			return 0;
+		} else {
+			return undefined;
+		}
+	};
+
+	this.decode = function decodeBoolean(val){
+		if(val == 1){
+			return true;
+		} else if (val === 0) {
+			return false;
+		} else {
+			return undefined;
+		}
+	};
+}
+util.inherits(NumberProperty, Property);
+
+
+
+
+/**
  * DateTime Property
  */
 function DateTimeProperty(options){
@@ -189,6 +221,7 @@ exports.StringProperty = StringProperty;
 exports.ReferenceProperty = ReferenceProperty;
 exports.JSONProperty = JSONProperty;
 exports.NumberProperty = NumberProperty;
+exports.BooleanProperty = BooleanProperty;
 exports.DateTimeProperty = DateTimeProperty;
 exports.SetProperty = SetProperty;
 exports.ListProperty = ListProperty;
