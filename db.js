@@ -145,55 +145,69 @@ function save(obj, callback, expected){
 	
 	// Create the Object Value mapping
 	var obj_values = { };
-	obj_values[obj.constructor._hashKeyName] = {};
-	obj_values[obj.constructor._hashKeyName][obj.constructor._hashKeyType] = obj[obj.constructor._hashKeyName];
+	//obj_values[obj.constructor._hashKeyName] = {};
+	//obj_values[obj.constructor._hashKeyName][obj.constructor._hashKeyType] = obj[obj.constructor._hashKeyName];
+	var ignored_props = [
+		obj.constructor._hashKeyName,
+	];
+	if(obj.constructor._rangeKeyName){
+		ignored_props.push(obj.constructor._rangeKeyName);
+	}
 	for (var prop_name in properties){
-		var prop_type = properties[prop_name].type_code;
-		var prop_val = obj[prop_name];
+		if(ignored_props.indexOf(prop_name) < 0){
+			var prop_type = properties[prop_name].type_code;
+			var prop_val = obj[prop_name];
 
-		// Validate
-		properties[prop_name].validate(prop_val);
+			// Validate
+			properties[prop_name].validate(prop_val);
 
-		// Check for custom property options
-		if(properties[prop_name].options){
-			// Auto now and Auto now add should automatically get set
-			if( (properties[prop_name].options.auto_now_add && !prop_val) || properties[prop_name].options.auto_now){
-				prop_val = new Date();
-				// Also set the value on the object so it is returned properly
-				obj[prop_name] = prop_val;
-			}
-		}
-
-		// Encode if we have an encoder
-		if(properties[prop_name].encode){
-			prop_val = properties[prop_name].encode(prop_val);
-		}
-
-
-		if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || !(prop_val instanceof Array) || prop_val.length > 0)){
-			obj_values[prop_name] = {};
-			if(prop_type.length == 2 && prop_type[1] == 'S'){
-				for (var n in prop_val){
-					prop_val[n] = convertValueToDynamo(prop_val[n]);
+			// Check for custom property options
+			if(properties[prop_name].options){
+				// Auto now and Auto now add should automatically get set
+				if( (properties[prop_name].options.auto_now_add && !prop_val) || properties[prop_name].options.auto_now){
+					prop_val = new Date();
+					// Also set the value on the object so it is returned properly
+					obj[prop_name] = prop_val;
 				}
-			} else {
-				prop_val = convertValueToDynamo(prop_val);
 			}
-			obj_values[prop_name][prop_type] = prop_val;
+
+			// Encode if we have an encoder
+			if(properties[prop_name].encode){
+				prop_val = properties[prop_name].encode(prop_val);
+			}
+
+
+			if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || !(prop_val instanceof Array) || prop_val.length > 0)){
+				obj_values[prop_name] = {};
+				if(prop_type.length == 2 && prop_type[1] == 'S'){
+					for (var n in prop_val){
+						prop_val[n] = convertValueToDynamo(prop_val[n]);
+					}
+				} else {
+					prop_val = convertValueToDynamo(prop_val);
+				}
+				var Value = {};
+				Value[prop_type] = prop_val;
+				obj_values[prop_name] = { Action: 'PUT', Value: Value };
+			} else {
+				obj_values[prop_name] = { Action: 'DELETE' };
+			}
 		}
 	}
 
 
 	var args = {
+		Key: dynamizeKey(obj.constructor, obj.getID()),
 		TableName: table_name,
-		Item: obj_values,
+		AttributeUpdates: obj_values,
 	};
 	if(expected){
 		args.Expected = expected;
 	}
 
-	// Save
-	dynamodb.putItem(args, function(err, data){
+	// Save using updateItem, this prevents us from clobbering properties
+	// we don't know about
+	dynamodb.updateItem(args, function(err, data){
 		if(err){
 			console.error(err, data);
 			console.log('ERROR WITH', args);
