@@ -535,21 +535,70 @@ function define(options){
 	 * Allows setting specific properties
 	 * @param props: An object mapping of property_name: value to set, or "null" to remove
 	 * @param callback: An optional function to call back with the results
+	 * @param log: An optional set of log parameters to send
 	 */
-	Cls.prototype.set = function objAdd(props, callback){
+	Cls.prototype.set = function objAdd(props, callback, log){
 		var self = this;
 		var AttributeUpdates = {};
+
 		self.emit('onUpdate', props);
+
+		if(!log){
+			log = {};
+		}
+
+		// Allow $comment, $user, and $transaction_id
+		// to be passed in as regular arguments.
+		['$comment', '$user', '$transaction_id'].forEach(function(prop_name){
+			if(props[prop_name]){
+				log[prop_name.substring(1)] = props[prop_name];
+				delete props[prop_name];
+			}
+		});
+
+		// Handle any Auto-Properties
+		Object.keys(Cls._properties).forEach(function(prop_name){
+			var prop = Cls._properties[prop_name];
+			// Automatic properties should still be updated
+			if(prop.options && prop.options.auto_now){
+				var val = prop.encode(new Date());
+				// Convert
+				val = convertValueToDynamo(val);
+
+				var DynamoValue = {};
+				DynamoValue[Cls._properties[prop_name].type_code] = val;
+				AttributeUpdates[prop_name] = {
+					Action: 'PUT',
+					Value: DynamoValue,
+				};
+
+			}
+		});
+
+
 		Object.keys(props).forEach(function(prop_name){
-			if(Cls._properties[prop_name]){
+			var prop = Cls._properties[prop_name];
+			if(prop){
 				var val = props[prop_name];
 				self[prop_name] = val;
+
 				if(val === null){
 					AttributeUpdates[prop_name] = {
 						Action: 'DELETE',
 					};
 				} else {
+
+					// Encode
+					if(prop.encode_for_search && prop.encode){
+						val = prop.encode(val);
+					}
+
+					// Validate
+					prop.validate(val);
+
+					// Convert
 					val = convertValueToDynamo(val);
+
 					var DynamoValue = {};
 					DynamoValue[Cls._properties[prop_name].type_code] = val;
 					AttributeUpdates[prop_name] = {
@@ -557,16 +606,52 @@ function define(options){
 						Value: DynamoValue,
 					};
 				}
-				updateItem(self, AttributeUpdates, function(){
-					if(callback){
-						callback(arguments);
-					}
-					self.emit('afterUpdate', arguments);
-				});
 			} else {
-				throw new Error('Property not found', prop_name);
+				console.error('Property not found', prop_name);
+				throw new Error('Property not found ' + prop_name);
 			}
 		});
+
+		// Allow History Tracking
+		if( Cls.$options.track_history ){
+
+			// This parameter Mapping is REQUIRED to make history tracking work
+			if(Cls.$type){
+				self.$type = Cls.$type;
+			}
+			// Allow dynamic mapping of parametrs
+			if(Cls.$paramMapping){
+				Cls.$paramMapping.forEach(function(map){
+					self[map.dest] = self[map.source];
+				});
+			}
+
+			// New objects wouldn't yet have a $hist object
+			var hist = self.$hist;
+			if(!hist){
+				hist = new History();
+			}
+			hist.obj = { $type: self.$type, $id: self.$id };
+			hist.new_obj = self.getSimplified();
+			// Allow adding in special options
+			if(log){
+				Object.keys(log).forEach(function(key){
+					hist[key] = log[key];
+				});
+			}
+
+			// Set the current date as the timestamp
+			hist.ts = new Date();
+			hist.save();
+		}
+
+		updateItem(self, AttributeUpdates, function(err, data){
+			if(callback){
+				callback(err, data);
+			}
+			self.emit('afterUpdate', err, data);
+		});
+
 	};
 
 
