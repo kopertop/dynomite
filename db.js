@@ -7,6 +7,8 @@
 var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
 var dynamodb = new AWS.DynamoDB();
+var EventEmitter = require('events').EventEmitter;
+var util = require('util');
 
 /**
  * Delayed function call
@@ -145,55 +147,69 @@ function save(obj, callback, expected){
 	
 	// Create the Object Value mapping
 	var obj_values = { };
-	obj_values[obj.constructor._hashKeyName] = {};
-	obj_values[obj.constructor._hashKeyName][obj.constructor._hashKeyType] = obj[obj.constructor._hashKeyName];
+	//obj_values[obj.constructor._hashKeyName] = {};
+	//obj_values[obj.constructor._hashKeyName][obj.constructor._hashKeyType] = obj[obj.constructor._hashKeyName];
+	var ignored_props = [
+		obj.constructor._hashKeyName,
+	];
+	if(obj.constructor._rangeKeyName){
+		ignored_props.push(obj.constructor._rangeKeyName);
+	}
 	for (var prop_name in properties){
-		var prop_type = properties[prop_name].type_code;
-		var prop_val = obj[prop_name];
+		if(ignored_props.indexOf(prop_name) < 0){
+			var prop_type = properties[prop_name].type_code;
+			var prop_val = obj[prop_name];
 
-		// Validate
-		properties[prop_name].validate(prop_val);
+			// Validate
+			properties[prop_name].validate(prop_val);
 
-		// Check for custom property options
-		if(properties[prop_name].options){
-			// Auto now and Auto now add should automatically get set
-			if( (properties[prop_name].options.auto_now_add && !prop_val) || properties[prop_name].options.auto_now){
-				prop_val = new Date();
-				// Also set the value on the object so it is returned properly
-				obj[prop_name] = prop_val;
-			}
-		}
-
-		// Encode if we have an encoder
-		if(properties[prop_name].encode){
-			prop_val = properties[prop_name].encode(prop_val);
-		}
-
-
-		if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || !(prop_val instanceof Array) || prop_val.length > 0)){
-			obj_values[prop_name] = {};
-			if(prop_type.length == 2 && prop_type[1] == 'S'){
-				for (var n in prop_val){
-					prop_val[n] = convertValueToDynamo(prop_val[n]);
+			// Check for custom property options
+			if(properties[prop_name].options){
+				// Auto now and Auto now add should automatically get set
+				if( (properties[prop_name].options.auto_now_add && !prop_val) || properties[prop_name].options.auto_now){
+					prop_val = new Date();
+					// Also set the value on the object so it is returned properly
+					obj[prop_name] = prop_val;
 				}
-			} else {
-				prop_val = convertValueToDynamo(prop_val);
 			}
-			obj_values[prop_name][prop_type] = prop_val;
+
+			// Encode if we have an encoder
+			if(properties[prop_name].encode){
+				prop_val = properties[prop_name].encode(prop_val);
+			}
+
+
+			if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || !(prop_val instanceof Array) || prop_val.length > 0)){
+				obj_values[prop_name] = {};
+				if(prop_type.length == 2 && prop_type[1] == 'S'){
+					for (var n in prop_val){
+						prop_val[n] = convertValueToDynamo(prop_val[n]);
+					}
+				} else {
+					prop_val = convertValueToDynamo(prop_val);
+				}
+				var Value = {};
+				Value[prop_type] = prop_val;
+				obj_values[prop_name] = { Action: 'PUT', Value: Value };
+			} else {
+				obj_values[prop_name] = { Action: 'DELETE' };
+			}
 		}
 	}
 
 
 	var args = {
+		Key: dynamizeKey(obj.constructor, obj.getID()),
 		TableName: table_name,
-		Item: obj_values,
+		AttributeUpdates: obj_values,
 	};
 	if(expected){
 		args.Expected = expected;
 	}
 
-	// Save
-	dynamodb.putItem(args, function(err, data){
+	// Save using updateItem, this prevents us from clobbering properties
+	// we don't know about
+	dynamodb.updateItem(args, function(err, data){
 		if(err){
 			console.error(err, data);
 			console.log('ERROR WITH', args);
@@ -354,22 +370,23 @@ function define(options){
 			this[Cls._rangeKeyName] = rangeKey;
 		}
 	};
-	// Allows an "onSave" trigger to be called
-	// when save() is called
-	if(typeof options.onSave == 'function'){
-		Cls.prototype.onSave = options.onSave;
-	} else {
-		Cls.prototype.onSave = function(){};
-	}
-	// Also adds in an afterSave trigger
-	if(typeof options.afterSave == 'function'){
-		Cls.prototype.afterSave = options.afterSave;
-	} else {
-		Cls.prototype.afterSave = function(){};
-	}
-	// And allow a beforeSave trigger
-	Cls.prototype.beforeSave = options.beforeSave;
+	// Make this an EventEmitter subclass
+	util.inherits(Cls, EventEmitter);
 
+	// on(Save|Update) and after(Save|Update) Are events,
+	// and do not block
+	['onSave', 'afterSave', 'onUpdate', 'afterUpdate'].forEach(function(fname){
+		if(typeof options[fname] == 'function'){
+			Cls.prototype.on(fname, options[fname]);
+		}
+	});
+
+	// beforeSave and beforeUpdate are regular functions that can block
+	['beforeSave', 'beforeUpdate'].forEach(function(fname){
+		if(typeof options[fname] == 'function'){
+			Cls.prototype[fname] = options[fname];
+		}
+	});
 
 	if(options.$type){
 		Cls.$type = options.$type;
@@ -431,7 +448,8 @@ function define(options){
 		});
 
 		function doSaveOperation(){
-			self.onSave();
+			// Triggers any "onSave" events
+			self.emit('onSave');
 			return save(self, function(err, data){
 				// Allow History Tracking
 				if( Cls.$options.track_history ){
@@ -464,8 +482,9 @@ function define(options){
 					hist.ts = new Date();
 					hist.save();
 				}
-				// Post-Save triggers
-				self.afterSave();
+				// Trigger any "afterSave" events
+				self.emit('afterSave');
+
 				if(callback){
 					callback(err, data);
 				}
@@ -512,6 +531,131 @@ function define(options){
 		});
 	};
 
+	/**
+	 * Allows setting specific properties
+	 * @param props: An object mapping of property_name: value to set, or "null" to remove
+	 * @param callback: An optional function to call back with the results
+	 * @param log: An optional set of log parameters to send
+	 */
+	Cls.prototype.set = function objAdd(props, callback, log){
+		var self = this;
+		var AttributeUpdates = {};
+
+		self.emit('onUpdate', props);
+
+		if(!log){
+			log = {};
+		}
+
+		// Allow $comment, $user, and $transaction_id
+		// to be passed in as regular arguments.
+		['$comment', '$user', '$transaction_id'].forEach(function(prop_name){
+			if(props[prop_name]){
+				log[prop_name.substring(1)] = props[prop_name];
+				delete props[prop_name];
+			}
+		});
+
+		// Handle any Auto-Properties
+		Object.keys(Cls._properties).forEach(function(prop_name){
+			var prop = Cls._properties[prop_name];
+			// Automatic properties should still be updated
+			if(prop.options && prop.options.auto_now){
+				var val = prop.encode(new Date());
+				// Convert
+				val = convertValueToDynamo(val);
+
+				var DynamoValue = {};
+				DynamoValue[Cls._properties[prop_name].type_code] = val;
+				AttributeUpdates[prop_name] = {
+					Action: 'PUT',
+					Value: DynamoValue,
+				};
+
+			}
+		});
+
+
+		Object.keys(props).forEach(function(prop_name){
+			var prop = Cls._properties[prop_name];
+			if(prop){
+				var val = props[prop_name];
+				self[prop_name] = val;
+
+				if(val === null){
+					AttributeUpdates[prop_name] = {
+						Action: 'DELETE',
+					};
+				} else {
+
+					// Encode
+					if(prop.encode_for_search && prop.encode){
+						val = prop.encode(val);
+					}
+
+					// Validate
+					prop.validate(val);
+
+					// Convert
+					val = convertValueToDynamo(val);
+
+					var DynamoValue = {};
+					DynamoValue[Cls._properties[prop_name].type_code] = val;
+					AttributeUpdates[prop_name] = {
+						Action: 'PUT',
+						Value: DynamoValue,
+					};
+				}
+			} else {
+				console.error('Property not found', prop_name);
+				throw new Error('Property not found ' + prop_name);
+			}
+		});
+
+		// Allow History Tracking
+		if( Cls.$options.track_history ){
+
+			// This parameter Mapping is REQUIRED to make history tracking work
+			if(Cls.$type){
+				self.$type = Cls.$type;
+			}
+			// Allow dynamic mapping of parametrs
+			if(Cls.$paramMapping){
+				Cls.$paramMapping.forEach(function(map){
+					self[map.dest] = self[map.source];
+				});
+			}
+
+			// New objects wouldn't yet have a $hist object
+			var hist = self.$hist;
+			if(!hist){
+				hist = new History();
+			}
+			hist.obj = { $type: self.$type, $id: self.$id };
+			hist.new_obj = self.getSimplified();
+			// Allow adding in special options
+			if(log){
+				Object.keys(log).forEach(function(key){
+					hist[key] = log[key];
+				});
+			}
+
+			// Set the current date as the timestamp
+			hist.ts = new Date();
+			hist.save();
+		}
+
+		updateItem(self, AttributeUpdates, function(err, data){
+			if(callback){
+				callback(err, data);
+			}
+			self.emit('afterUpdate', err, data);
+		});
+
+	};
+
+
+
 	Cls.prototype.getID = function(){
 		if(Cls._rangeKeyName){
 			return [this[Cls._hashKeyName], this[Cls._rangeKeyName]];
@@ -531,7 +675,7 @@ function define(options){
 			var val = self[prop_name];
 			if(val){
 				// Allow the custom encode function to be fired here
-				if(prop.encode){
+				if(prop.encode_for_search && prop.encode){
 					val = prop.encode(val);
 				}
 				// If the property name starts with a $, remove it
@@ -637,7 +781,11 @@ function define(options){
 				}
 				// Decode into the JS type
 				if(expected_prop && expected_prop.decode !== undefined){
-					val = expected_prop.decode(val);
+					try {
+						val = expected_prop.decode(val);
+					} catch (e) {
+						console.error('Could not decode property', prop_name, val, e);
+					}
 				}
 
 				obj[prop_name] = val;

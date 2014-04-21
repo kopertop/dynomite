@@ -73,5 +73,29 @@ describe('db.types', function(){
 
 	});
 
+	// Boolean Property
+	describe('Boolean Property', function(){
+		var prop = new types.BooleanProperty({ verbose_name: 'Boolean Property Test' });
+
+		it('Should encode/decode a true value property', function(){
+			var output = prop.encode(true);
+			assert.equal(output, 1);
+			assert.equal(prop.encode(output), true);
+		});
+
+		it('Should encode/decode a false value property', function(){
+			var output = prop.encode(false);
+			assert.equal(output, 0);
+			assert.equal(prop.encode(output), false);
+		});
+
+		it('Should handle undefined values', function(){
+			assert.equal(prop.encode(), undefined);
+			assert.equal(prop.decode(), undefined);
+		});
+		
+
+	});
+
 });
 
