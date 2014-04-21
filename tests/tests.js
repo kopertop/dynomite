@@ -329,7 +329,8 @@ describe('[DB]', function(){
 					name: new db.types.StringProperty({verbose_name: 'My Name'}),
 				},
 				onSave: function(){
-					assert(this == hookObj);
+					assert(this === hookObj);
+					assert(this.$id == 'MY-TEST-HOOK-ON-SAVE');
 					done();
 				},
 			});
@@ -337,6 +338,79 @@ describe('[DB]', function(){
 			hookObj = new HookTest('MY-TEST-HOOK-ON-SAVE');
 			hookObj.save();
 		});
+
+		it('Should fire our "afterSave" event in the scope of this object', function(done){
+			var hookObj = null;
+			var HookTest = db.define({
+				tableName: 'Test',
+				key: '$id',
+				properties: {
+					$id: new db.types.StringProperty(),
+					name: new db.types.StringProperty({verbose_name: 'My Name'}),
+				},
+				afterSave: function(){
+					console.log(this);
+					assert(this === hookObj);
+					assert(this.$id == 'MY-TEST-HOOK-AFTER-SAVE');
+					done();
+				},
+			});
+
+			hookObj = new HookTest('MY-TEST-HOOK-AFTER-SAVE');
+			hookObj.save();
+		});
+
+		it('Should fire our "afterUpdate" event in the scope of this object', function(done){
+			var hookObj = null;
+			var HookTest = db.define({
+				tableName: 'Test',
+				key: '$id',
+				properties: {
+					$id: new db.types.StringProperty(),
+					name: new db.types.StringProperty({verbose_name: 'My Name'}),
+				},
+				afterUpdate: function(){
+					console.log(this);
+					assert(this === hookObj);
+					assert(this.$id == 'MY-TEST-HOOK-AFTER-UPDATE');
+					assert(this.name == 'Test Name');
+					done();
+				},
+			});
+
+			hookObj = new HookTest('MY-TEST-HOOK-AFTER-UPDATE');
+			hookObj.name = 'My Name';
+			hookObj.set({ name: 'Test Name' });
+		});
+
+
+		it('Should fire our "onUpdate" event in the scope of this object', function(done){
+			var hookObj = null;
+			var HookTest = db.define({
+				tableName: 'Test',
+				key: '$id',
+				properties: {
+					$id: new db.types.StringProperty(),
+					name: new db.types.StringProperty({verbose_name: 'My Name'}),
+				},
+				onUpdate: function(props){
+					console.log(this);
+					assert(this === hookObj);
+					assert(this.$id == 'MY-TEST-HOOK-ON-UPDATE');
+					assert(this.name == 'My Name');
+					assert(props.name == 'Test Name');
+					done();
+				},
+			});
+
+			hookObj = new HookTest('MY-TEST-HOOK-ON-UPDATE');
+			hookObj.name = 'My Name';
+			hookObj.set({ name: 'Test Name' });
+		});
+
+
+
+
 
 	});
 });

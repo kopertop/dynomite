@@ -373,8 +373,16 @@ function define(options){
 	// Make this an EventEmitter subclass
 	util.inherits(Cls, EventEmitter);
 
-	// Adds triggers for on Save, afterSave, and beforeSave
-	['onSave', 'afterSave', 'beforeSave'].forEach(function(fname){
+	// on(Save|Update) and after(Save|Update) Are events,
+	// and do not block
+	['onSave', 'afterSave', 'onUpdate', 'afterUpdate'].forEach(function(fname){
+		if(typeof options[fname] == 'function'){
+			Cls.prototype.on(fname, options[fname]);
+		}
+	});
+
+	// beforeSave and beforeUpdate are regular functions that can block
+	['beforeSave', 'beforeUpdate'].forEach(function(fname){
 		if(typeof options[fname] == 'function'){
 			Cls.prototype[fname] = options[fname];
 		}
@@ -440,9 +448,8 @@ function define(options){
 		});
 
 		function doSaveOperation(){
-			if(typeof self.onSave == 'function'){
-				self.onSave();
-			}
+			// Triggers any "onSave" events
+			self.emit('onSave');
 			return save(self, function(err, data){
 				// Allow History Tracking
 				if( Cls.$options.track_history ){
@@ -475,10 +482,9 @@ function define(options){
 					hist.ts = new Date();
 					hist.save();
 				}
-				// Post-Save triggers
-				if(typeof self.afterSave == 'function'){
-					self.afterSave();
-				}
+				// Trigger any "afterSave" events
+				self.emit('afterSave');
+
 				if(callback){
 					callback(err, data);
 				}
@@ -533,9 +539,11 @@ function define(options){
 	Cls.prototype.set = function objAdd(props, callback){
 		var self = this;
 		var AttributeUpdates = {};
+		self.emit('onUpdate', props);
 		Object.keys(props).forEach(function(prop_name){
 			if(Cls._properties[prop_name]){
 				var val = props[prop_name];
+				self[prop_name] = val;
 				if(val === null){
 					AttributeUpdates[prop_name] = {
 						Action: 'DELETE',
@@ -549,7 +557,12 @@ function define(options){
 						Value: DynamoValue,
 					};
 				}
-				updateItem(self, AttributeUpdates, callback);
+				updateItem(self, AttributeUpdates, function(){
+					if(callback){
+						callback(arguments);
+					}
+					self.emit('afterUpdate', arguments);
+				});
 			} else {
 				throw new Error('Property not found', prop_name);
 			}
