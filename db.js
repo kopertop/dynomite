@@ -368,22 +368,14 @@ function define(options){
 			this[Cls._rangeKeyName] = rangeKey;
 		}
 	};
-	// Allows an "onSave" trigger to be called
-	// when save() is called
-	if(typeof options.onSave == 'function'){
-		Cls.prototype.onSave = options.onSave;
-	} else {
-		Cls.prototype.onSave = function(){};
-	}
-	// Also adds in an afterSave trigger
-	if(typeof options.afterSave == 'function'){
-		Cls.prototype.afterSave = options.afterSave;
-	} else {
-		Cls.prototype.afterSave = function(){};
-	}
-	// And allow a beforeSave trigger
-	Cls.prototype.beforeSave = options.beforeSave;
-
+	// Adds triggers for on Save, afterSave, and beforeSave
+	['onSave', 'afterSave', 'beforeSave'].forEach(function(fname){
+		if(typeof options[fname] == 'function'){
+			Cls.prototype[fname] = options[fname];
+		} else {
+			Cls.prototype[fname] = function(){};
+		}
+	});
 
 	if(options.$type){
 		Cls.$type = options.$type;
@@ -525,6 +517,39 @@ function define(options){
 			}
 		});
 	};
+
+	/**
+	 * Allows setting specific properties
+	 * @param props: An object mapping of property_name: value to set, or "null" to remove
+	 * @param callback: An optional function to call back with the results
+	 */
+	Cls.prototype.set = function objAdd(props, callback){
+		var self = this;
+		var AttributeUpdates = {};
+		Object.keys(props).forEach(function(prop_name){
+			if(Cls._properties[prop_name]){
+				var val = props[prop_name];
+				if(val === null){
+					AttributeUpdates[prop_name] = {
+						Action: 'DELETE',
+					};
+				} else {
+					val = convertValueToDynamo(val);
+					var DynamoValue = {};
+					DynamoValue[Cls._properties[prop_name].type_code] = val;
+					AttributeUpdates[prop_name] = {
+						Action: 'PUT',
+						Value: DynamoValue,
+					};
+				}
+				updateItem(self, AttributeUpdates, callback);
+			} else {
+				throw new Error('Property not found', prop_name);
+			}
+		});
+	};
+
+
 
 	Cls.prototype.getID = function(){
 		if(Cls._rangeKeyName){
