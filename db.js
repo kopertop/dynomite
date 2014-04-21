@@ -476,7 +476,7 @@ function define(options){
 					hist.save();
 				}
 				// Post-Save triggers
-				if(typeof self.onSave == 'function'){
+				if(typeof self.afterSave == 'function'){
 					self.afterSave();
 				}
 				if(callback){
