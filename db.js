@@ -7,6 +7,8 @@
 var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
 var dynamodb = new AWS.DynamoDB();
+var EventEmitter = require('events').EventEmitter;
+var util = require('util');
 
 /**
  * Delayed function call
@@ -368,12 +370,13 @@ function define(options){
 			this[Cls._rangeKeyName] = rangeKey;
 		}
 	};
+	// Make this an EventEmitter subclass
+	util.inherits(Cls, EventEmitter);
+
 	// Adds triggers for on Save, afterSave, and beforeSave
 	['onSave', 'afterSave', 'beforeSave'].forEach(function(fname){
 		if(typeof options[fname] == 'function'){
 			Cls.prototype[fname] = options[fname];
-		} else {
-			Cls.prototype[fname] = function(){};
 		}
 	});
 
@@ -437,7 +440,9 @@ function define(options){
 		});
 
 		function doSaveOperation(){
-			self.onSave();
+			if(typeof self.onSave == 'function'){
+				self.onSave();
+			}
 			return save(self, function(err, data){
 				// Allow History Tracking
 				if( Cls.$options.track_history ){
@@ -471,7 +476,9 @@ function define(options){
 					hist.save();
 				}
 				// Post-Save triggers
-				self.afterSave();
+				if(typeof self.onSave == 'function'){
+					self.afterSave();
+				}
 				if(callback){
 					callback(err, data);
 				}

@@ -316,4 +316,27 @@ describe('[DB]', function(){
 		});
 
 	});
+
+	// Test the "on(Save|Update)", "after(Save|Update)", "before(Save|Update)" events
+	describe('Hooks', function(){
+		it('Should fire our "onSave" event in the scope of this object', function(done){
+			var hookObj = null;
+			var HookTest = db.define({
+				tableName: 'Test',
+				key: '$id',
+				properties: {
+					$id: new db.types.StringProperty(),
+					name: new db.types.StringProperty({verbose_name: 'My Name'}),
+				},
+				onSave: function(){
+					assert(this == hookObj);
+					done();
+				},
+			});
+
+			hookObj = new HookTest('MY-TEST-HOOK-ON-SAVE');
+			hookObj.save();
+		});
+
+	});
 });
