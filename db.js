@@ -589,7 +589,7 @@ function define(options){
 				} else {
 
 					// Encode
-					if(prop.encode_for_search && prop.encode){
+					if(prop.encode){
 						val = prop.encode(val);
 					}
 
