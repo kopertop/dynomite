@@ -274,7 +274,7 @@ function listIterator(model, callback, err, data, opts, continue_function){
 	} else {
 		if(data.Count > 0){
 			data.Items.forEach(function(item){
-				callback(null, model.from_dynamo(item));
+				callback(null, model.from_dynamo(item), data.LastEvaluatedKey);
 			});
 			// Page
 			if(data.LastEvaluatedKey && !opts.Limit && continue_function){
@@ -283,10 +283,10 @@ function listIterator(model, callback, err, data, opts, continue_function){
 					continue_function(model, opts, callback);
 				}, 1000);
 			} else {
-				callback(null, null);
+				callback(null, null, data.LastEvaluatedKey);
 			}
 		} else {
-			callback(null, null);
+			callback(null, null, data.LastEvaluatedKey);
 		}
 	}
 }
