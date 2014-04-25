@@ -561,7 +561,11 @@ function define(options){
 			var prop = Cls._properties[prop_name];
 			// Automatic properties should still be updated
 			if(prop.options && prop.options.auto_now){
-				var val = prop.encode(new Date());
+				var val = new Date();
+
+				// Update the original object so the history gets updated properly
+				self[prop_name] = val;
+				val = prop.encode(val);
 				// Convert
 				val = convertValueToDynamo(val);
 

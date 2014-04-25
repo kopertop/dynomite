@@ -34,6 +34,8 @@ var History = db.define({
 		new_obj: new db.types.JSONProperty({ verbose_name: 'New Object' }),
 		changes: new db.types.JSONProperty({ verbose_name: 'Updated Properties' }),
 		resp: new db.types.JSONProperty({ verbose_name: 'DB Response' }),
+		api_version: new db.types.StringProperty({ verbose_name: 'API Version' }),
+		client_version: new db.types.StringProperty({ verbose_name: 'Client Version' }),
 		comment: new db.types.StringProperty({ verbose_name: 'Change Comment' }),
 		transaction_id: new db.types.StringProperty({ verbose_name: 'Transaction ID' }),
 	},
