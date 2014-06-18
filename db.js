@@ -677,7 +677,8 @@ function define(options){
 		Object.keys(Cls._properties).forEach(function(prop_name){
 			var prop = Cls._properties[prop_name];
 			var val = self[prop_name];
-			if(val){
+			// Make sure the value is not empty, but allow 0
+			if(val !== undefined && val !== null && val !== ''){
 				// Allow the custom encode function to be fired here
 				if(prop.encode_for_search && prop.encode){
 					val = prop.encode(val);
