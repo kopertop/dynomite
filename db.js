@@ -716,7 +716,10 @@ function define(options){
 		// Initialize the parameter history log
 		var params = {};
 		Object.keys(Cls._properties).forEach(function(prop_name){
-			params[prop_name] = null;
+			// Ignore any hidden properties
+			if(prop_name[0] != '_'){
+				params[prop_name] = null;
+			}
 		});
 
 		// Look through the history to find when the first time was that each
@@ -727,14 +730,17 @@ function define(options){
 				Object.keys(params).forEach(function(param_name){
 					// Only look if this history record isn't already found
 					if(params[param_name] === null){
-						if(!history.old_obj || JSON.stringify(history.old_obj[param_name]) != JSON.stringify(history.new_obj[param_name])){
+						if(!history.old_obj || (JSON.stringify(history.old_obj[param_name]) != JSON.stringify(history.new_obj[param_name])) ){
 							params[param_name] = {
 								user: history.user,
 								ts: history.ts,
 								transaction_id: history.transaction_id,
 								comment: history.comment,
-								last_value: history.old_obj[param_name],
 							};
+							// Only add the "last_value" if there was an old object
+							if(history.old_obj){
+								params[param_name].last_value =  history.old_obj[param_name];
+							}
 						}
 					}
 				});
