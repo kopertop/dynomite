@@ -698,10 +698,10 @@ function define(options){
 		History.query({ match: { obj: id_string }, }, callback);
 	};
 
-	//
-	// Batch Fetch,
-	// takes a list of IDs
-	//
+	/**
+	 * Batch Fetch,
+	 * takes a list of IDs
+	 */
 	Cls.batchLookup = function(ids, callback, opts){
 		return batchLookup(Cls, ids, callback, opts);
 	};
