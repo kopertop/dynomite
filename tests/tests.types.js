@@ -1,8 +1,8 @@
 /**
  * Tests the db.types module
  */
+'use strict';
 
-/* global require, before, after, beforeEach, describe, it */
 var assert = require('assert');
 var types = require('../db.types');
 

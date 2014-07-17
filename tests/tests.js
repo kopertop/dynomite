@@ -3,7 +3,8 @@
  * Mocha tests for Dynmoite
  *
  */
-/* global require, before, after, beforeEach, describe, it */
+'use strict';
+
 var assert = require('assert');
 var db = require('../db');
 var History = require('../resources/history').History;
@@ -220,16 +221,16 @@ describe('[DB]', function(){
 				console.log('Got Object', refObj);
 				assert(refObj);
 				assert(refObj.jsonProperty);
-				assert(refObj.jsonProperty[0][0] == 'Some Item');
-				assert(refObj.jsonProperty[0][1] == 'With Stuff');
+				assert(refObj.jsonProperty[0][0] === 'Some Item');
+				assert(refObj.jsonProperty[0][1] === 'With Stuff');
 				assert(refObj.jsonProperty[0][2] === 0);
-				assert(refObj.jsonProperty[2] == 'Some Basic Item');
-				assert(refObj.jsonProperty[3].some ==  'Object');
-				assert(refObj.jsonProperty[3].other[0] ==  'Complex Things');
-				assert(refObj.jsonProperty[3].other[1] ==  123);
-				assert(refObj.jsonProperty[4] == 19);
+				assert(refObj.jsonProperty[2] === 'Some Basic Item');
+				assert(refObj.jsonProperty[3].some ===  'Object');
+				assert(refObj.jsonProperty[3].other[0] ===  'Complex Things');
+				assert(refObj.jsonProperty[3].other[1] ===  123);
+				assert(refObj.jsonProperty[4] === 19);
 				assert(refObj.jsonProperty[5] === 0);
-				assert(refObj.jsonProperty[6] == 45);
+				assert(refObj.jsonProperty[6] === 45);
 				done();
 			});
 		});
@@ -255,8 +256,8 @@ describe('[DB]', function(){
 					obj.getHistory(function(err, log){
 						if(log){
 							logsFound += 1;
-							assert(log.obj.$type == 'HistoryTest');
-							assert(log.obj.$id == 'TestObject');
+							assert(log.obj.$type === 'HistoryTest');
+							assert(log.obj.$id === 'TestObject');
 						} else {
 							console.log('Found', logsFound, 'logs');
 							assert(logsFound > 0);
@@ -330,7 +331,7 @@ describe('[DB]', function(){
 				},
 				onSave: function(){
 					assert(this === hookObj);
-					assert(this.$id == 'MY-TEST-HOOK-ON-SAVE');
+					assert(this.$id === 'MY-TEST-HOOK-ON-SAVE');
 					done();
 				},
 			});
@@ -351,7 +352,7 @@ describe('[DB]', function(){
 				afterSave: function(){
 					console.log(this);
 					assert(this === hookObj);
-					assert(this.$id == 'MY-TEST-HOOK-AFTER-SAVE');
+					assert(this.$id === 'MY-TEST-HOOK-AFTER-SAVE');
 					done();
 				},
 			});
@@ -372,8 +373,8 @@ describe('[DB]', function(){
 				afterUpdate: function(){
 					console.log(this);
 					assert(this === hookObj);
-					assert(this.$id == 'MY-TEST-HOOK-AFTER-UPDATE');
-					assert(this.name == 'Test Name');
+					assert(this.$id === 'MY-TEST-HOOK-AFTER-UPDATE');
+					assert(this.name === 'Test Name');
 					done();
 				},
 			});
@@ -396,9 +397,9 @@ describe('[DB]', function(){
 				onUpdate: function(props){
 					console.log(this);
 					assert(this === hookObj);
-					assert(this.$id == 'MY-TEST-HOOK-ON-UPDATE');
-					assert(this.name == 'My Name');
-					assert(props.name == 'Test Name');
+					assert(this.$id === 'MY-TEST-HOOK-ON-UPDATE');
+					assert(this.name === 'My Name');
+					assert(props.name === 'Test Name');
 					done();
 				},
 			});
