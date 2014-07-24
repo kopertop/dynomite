@@ -21,6 +21,8 @@
 	"unused": false,
 	"globals":{
 		"beforeEach": true,
+		"afterEach": true,
+		"before": true,
 		"after": true,
 		"it": true,
 		"describe": true
