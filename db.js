@@ -541,65 +541,32 @@ function define(options){
 		var self = this;
 		var AttributeUpdates = {};
 
-		self.emit('onUpdate', props);
+		function doUpdateOperation(){
+			self.emit('onUpdate', props);
 
-		if(!log){
-			log = {};
-		}
-
-		// Allow $comment, $user, and $transaction_id
-		// to be passed in as regular arguments.
-		['$comment', '$user', '$transaction_id'].forEach(function(prop_name){
-			if(props[prop_name]){
-				log[prop_name.substring(1)] = props[prop_name];
-				delete props[prop_name];
+			if(!log){
+				log = {};
 			}
-		});
 
-		// Handle any Auto-Properties
-		Object.keys(Cls._properties).forEach(function(prop_name){
-			var prop = Cls._properties[prop_name];
-			// Automatic properties should still be updated
-			if(prop.options && prop.options.auto_now){
-				var val = new Date();
+			// Allow $comment, $user, and $transaction_id
+			// to be passed in as regular arguments.
+			['$comment', '$user', '$transaction_id'].forEach(function(prop_name){
+				if(props[prop_name]){
+					log[prop_name.substring(1)] = props[prop_name];
+					delete props[prop_name];
+				}
+			});
 
-				// Update the original object so the history gets updated properly
-				self[prop_name] = val;
-				val = prop.encode(val);
-				// Convert
-				val = convertValueToDynamo(val);
+			// Handle any Auto-Properties
+			Object.keys(Cls._properties).forEach(function(prop_name){
+				var prop = Cls._properties[prop_name];
+				// Automatic properties should still be updated
+				if(prop.options && prop.options.auto_now){
+					var val = new Date();
 
-				var DynamoValue = {};
-				DynamoValue[Cls._properties[prop_name].type_code] = val;
-				AttributeUpdates[prop_name] = {
-					Action: 'PUT',
-					Value: DynamoValue,
-				};
-
-			}
-		});
-
-
-		Object.keys(props).forEach(function(prop_name){
-			var prop = Cls._properties[prop_name];
-			if(prop){
-				var val = props[prop_name];
-				self[prop_name] = val;
-
-				if(val === null){
-					AttributeUpdates[prop_name] = {
-						Action: 'DELETE',
-					};
-				} else {
-
-					// Encode
-					if(prop.encode){
-						val = prop.encode(val);
-					}
-
-					// Validate
-					prop.validate(val);
-
+					// Update the original object so the history gets updated properly
+					self[prop_name] = val;
+					val = prop.encode(val);
 					// Convert
 					val = convertValueToDynamo(val);
 
@@ -609,52 +576,98 @@ function define(options){
 						Action: 'PUT',
 						Value: DynamoValue,
 					};
+
 				}
-			} else {
-				console.error('Property not found', prop_name);
-				throw new Error('Property not found ' + prop_name);
-			}
-		});
+			});
 
-		// Allow History Tracking
-		if( Cls.$options.track_history ){
 
-			// This parameter Mapping is REQUIRED to make history tracking work
-			if(Cls.$type){
-				self.$type = Cls.$type;
-			}
-			// Allow dynamic mapping of parametrs
-			if(Cls.$paramMapping){
-				Cls.$paramMapping.forEach(function(map){
-					self[map.dest] = self[map.source];
-				});
+			Object.keys(props).forEach(function(prop_name){
+				var prop = Cls._properties[prop_name];
+				if(prop){
+					var val = props[prop_name];
+					self[prop_name] = val;
+
+					if(val === null){
+						AttributeUpdates[prop_name] = {
+							Action: 'DELETE',
+						};
+					} else {
+
+						// Encode
+						if(prop.encode){
+							val = prop.encode(val);
+						}
+
+						// Validate
+						prop.validate(val);
+
+						// Convert
+						val = convertValueToDynamo(val);
+
+						var DynamoValue = {};
+						DynamoValue[Cls._properties[prop_name].type_code] = val;
+						AttributeUpdates[prop_name] = {
+							Action: 'PUT',
+							Value: DynamoValue,
+						};
+					}
+				} else {
+					console.error('Property not found', prop_name);
+					throw new Error('Property not found ' + prop_name);
+				}
+			});
+
+			// Allow History Tracking
+			if( Cls.$options.track_history ){
+
+				// This parameter Mapping is REQUIRED to make history tracking work
+				if(Cls.$type){
+					self.$type = Cls.$type;
+				}
+				// Allow dynamic mapping of parametrs
+				if(Cls.$paramMapping){
+					Cls.$paramMapping.forEach(function(map){
+						self[map.dest] = self[map.source];
+					});
+				}
+
+				// New objects wouldn't yet have a $hist object
+				var hist = self.$hist;
+				if(!hist){
+					hist = new History();
+				}
+				hist.obj = { $type: self.$type, $id: self.$id };
+				hist.new_obj = self.getSimplified();
+				// Allow adding in special options
+				if(log){
+					Object.keys(log).forEach(function(key){
+						hist[key] = log[key];
+					});
+				}
+
+				// Set the current date as the timestamp
+				hist.ts = new Date();
+				hist.save();
 			}
 
-			// New objects wouldn't yet have a $hist object
-			var hist = self.$hist;
-			if(!hist){
-				hist = new History();
-			}
-			hist.obj = { $type: self.$type, $id: self.$id };
-			hist.new_obj = self.getSimplified();
-			// Allow adding in special options
-			if(log){
-				Object.keys(log).forEach(function(key){
-					hist[key] = log[key];
-				});
-			}
+			updateItem(self, AttributeUpdates, function(err, data){
+				if(callback){
+					callback(err, data);
+				}
+				self.emit('afterUpdate', err, data);
+			});
 
-			// Set the current date as the timestamp
-			hist.ts = new Date();
-			hist.save();
 		}
 
-		updateItem(self, AttributeUpdates, function(err, data){
-			if(callback){
-				callback(err, data);
-			}
-			self.emit('afterUpdate', err, data);
-		});
+		// Allow before Update triggers, which
+		// allows us to intercept, block, and run
+		// asychronously
+		if(typeof self.beforeUpdate === 'function'){
+			self.beforeUpdate(doUpdateOperation, props);
+		} else {
+			doUpdateOperation();
+		}
+
 
 	};
 
@@ -842,7 +855,8 @@ function define(options){
 					try {
 						val = expected_prop.decode(val);
 					} catch (e) {
-						console.error('Could not decode property', prop_name, val, e);
+						console.error('Could not decode property', prop_name, val, e, item);
+						val = null;
 					}
 				}
 
