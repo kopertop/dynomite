@@ -3,7 +3,8 @@
  * Test the Sequence Generator
  *
  */
-/* global require, beforeEach, it, describe */
+'use strict';
+
 var assert = require('assert');
 var Sequence = require('../resources/sequence.js');
 

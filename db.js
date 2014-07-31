@@ -3,7 +3,8 @@
  *
  * @author Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, exports, module */
+'use strict';
+
 var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
 var dynamodb = new AWS.DynamoDB();
@@ -33,7 +34,7 @@ function delayFunction(fnc, callback, opts){
  */
 function dynamizeKey(model, id){
 	var key = {};
-	if(typeof id == 'string'){
+	if(typeof id === 'string'){
 		key[model._hashKeyName] = {};
 		key[model._hashKeyName][model._hashKeyType] =  id;
 	} else {
@@ -119,13 +120,13 @@ function batchLookup(model, ids, callback, opts){
  * Generic function to convert a value to the dynamo form
  */
 function convertValueToDynamo(val){
-	if(typeof val == 'number'){
+	if(typeof val === 'number'){
 		val = String(val);
-	} else if (typeof val == 'object'){
+	} else if (typeof val === 'object'){
 		if(val instanceof Date){
 			val = String(val.getTime());
 			// Prevent invalid dates
-			if(val == 'NaN'){
+			if(val === 'NaN'){
 				val = '0';
 			}
 		}
@@ -171,6 +172,11 @@ function save(obj, callback, expected){
 					// Also set the value on the object so it is returned properly
 					obj[prop_name] = prop_val;
 				}
+				// Default values should be set on save
+				if( properties[prop_name].options.default && !prop_val ){
+					prop_val = properties[prop_name].options.default;
+					obj[prop_name] = prop_val;
+				}
 			}
 
 			// Encode if we have an encoder
@@ -179,9 +185,9 @@ function save(obj, callback, expected){
 			}
 
 
-			if(typeof prop_val != 'undefined' && prop_val !== null && (typeof prop_val != 'object' || !(prop_val instanceof Array) || prop_val.length > 0)){
+			if(typeof prop_val !== 'undefined' && prop_val !== null && (typeof prop_val !== 'object' || !(prop_val instanceof Array) || prop_val.length > 0)){
 				obj_values[prop_name] = {};
-				if(prop_type.length == 2 && prop_type[1] == 'S'){
+				if(prop_type.length === 2 && prop_type[1] === 'S'){
 					for (var n in prop_val){
 						prop_val[n] = convertValueToDynamo(prop_val[n]);
 					}
@@ -305,7 +311,7 @@ function query(model, opts, callback){
 		Object.keys(opts.match).forEach(function(prop_name){
 			var prop = model._properties[prop_name];
 			var val = opts.match[prop_name];
-			if(typeof val == 'object'){
+			if(typeof val === 'object'){
 				var attr_vals = [];
 				val.forEach(function(v){
 					var attr_val = {};
@@ -366,7 +372,7 @@ function define(options){
 	
 	var Cls = function(hashKey, rangeKey){
 		this[Cls._hashKeyName] = hashKey;
-		if(typeof rangeKey != 'undefined'){
+		if(typeof rangeKey !== 'undefined'){
 			this[Cls._rangeKeyName] = rangeKey;
 		}
 	};
@@ -376,14 +382,14 @@ function define(options){
 	// on(Save|Update) and after(Save|Update) Are events,
 	// and do not block
 	['onSave', 'afterSave', 'onUpdate', 'afterUpdate'].forEach(function(fname){
-		if(typeof options[fname] == 'function'){
+		if(typeof options[fname] === 'function'){
 			Cls.prototype.on(fname, options[fname]);
 		}
 	});
 
 	// beforeSave and beforeUpdate are regular functions that can block
 	['beforeSave', 'beforeUpdate'].forEach(function(fname){
-		if(typeof options[fname] == 'function'){
+		if(typeof options[fname] === 'function'){
 			Cls.prototype[fname] = options[fname];
 		}
 	});
@@ -400,13 +406,13 @@ function define(options){
 
 	// Allows an "onRemove" trigger to be called
 	// when remove() is called
-	if(typeof options.onRemove == 'function'){
+	if(typeof options.onRemove === 'function'){
 		Cls.prototype.onRemove = options.onRemove;
 	} else {
 		Cls.prototype.onRemove = function(){};
 	}
 
-	if(typeof options.key == 'string'){
+	if(typeof options.key === 'string'){
 		Cls._hashKeyName = options.key;
 		Cls._hashKeyType = options.properties[options.key].type_code;
 	} else {
@@ -495,7 +501,7 @@ function define(options){
 		// Allow before Save triggers, which
 		// allows us to intercept, block, and run
 		// asychronously
-		if(typeof self.beforeSave == 'function'){
+		if(typeof self.beforeSave === 'function'){
 			self.beforeSave(doSaveOperation);
 		} else {
 			doSaveOperation();
@@ -541,65 +547,32 @@ function define(options){
 		var self = this;
 		var AttributeUpdates = {};
 
-		self.emit('onUpdate', props);
+		function doUpdateOperation(){
+			self.emit('onUpdate', props);
 
-		if(!log){
-			log = {};
-		}
-
-		// Allow $comment, $user, and $transaction_id
-		// to be passed in as regular arguments.
-		['$comment', '$user', '$transaction_id'].forEach(function(prop_name){
-			if(props[prop_name]){
-				log[prop_name.substring(1)] = props[prop_name];
-				delete props[prop_name];
+			if(!log){
+				log = {};
 			}
-		});
 
-		// Handle any Auto-Properties
-		Object.keys(Cls._properties).forEach(function(prop_name){
-			var prop = Cls._properties[prop_name];
-			// Automatic properties should still be updated
-			if(prop.options && prop.options.auto_now){
-				var val = new Date();
+			// Allow $comment, $user, and $transaction_id
+			// to be passed in as regular arguments.
+			['$comment', '$user', '$transaction_id'].forEach(function(prop_name){
+				if(props[prop_name]){
+					log[prop_name.substring(1)] = props[prop_name];
+					delete props[prop_name];
+				}
+			});
 
-				// Update the original object so the history gets updated properly
-				self[prop_name] = val;
-				val = prop.encode(val);
-				// Convert
-				val = convertValueToDynamo(val);
+			// Handle any Auto-Properties
+			Object.keys(Cls._properties).forEach(function(prop_name){
+				var prop = Cls._properties[prop_name];
+				// Automatic properties should still be updated
+				if(prop.options && prop.options.auto_now){
+					var val = new Date();
 
-				var DynamoValue = {};
-				DynamoValue[Cls._properties[prop_name].type_code] = val;
-				AttributeUpdates[prop_name] = {
-					Action: 'PUT',
-					Value: DynamoValue,
-				};
-
-			}
-		});
-
-
-		Object.keys(props).forEach(function(prop_name){
-			var prop = Cls._properties[prop_name];
-			if(prop){
-				var val = props[prop_name];
-				self[prop_name] = val;
-
-				if(val === null){
-					AttributeUpdates[prop_name] = {
-						Action: 'DELETE',
-					};
-				} else {
-
-					// Encode
-					if(prop.encode){
-						val = prop.encode(val);
-					}
-
-					// Validate
-					prop.validate(val);
-
+					// Update the original object so the history gets updated properly
+					self[prop_name] = val;
+					val = prop.encode(val);
 					// Convert
 					val = convertValueToDynamo(val);
 
@@ -609,52 +582,98 @@ function define(options){
 						Action: 'PUT',
 						Value: DynamoValue,
 					};
+
 				}
-			} else {
-				console.error('Property not found', prop_name);
-				throw new Error('Property not found ' + prop_name);
-			}
-		});
+			});
 
-		// Allow History Tracking
-		if( Cls.$options.track_history ){
 
-			// This parameter Mapping is REQUIRED to make history tracking work
-			if(Cls.$type){
-				self.$type = Cls.$type;
-			}
-			// Allow dynamic mapping of parametrs
-			if(Cls.$paramMapping){
-				Cls.$paramMapping.forEach(function(map){
-					self[map.dest] = self[map.source];
-				});
+			Object.keys(props).forEach(function(prop_name){
+				var prop = Cls._properties[prop_name];
+				if(prop){
+					var val = props[prop_name];
+					self[prop_name] = val;
+
+					if(val === null){
+						AttributeUpdates[prop_name] = {
+							Action: 'DELETE',
+						};
+					} else {
+
+						// Encode
+						if(prop.encode){
+							val = prop.encode(val);
+						}
+
+						// Validate
+						prop.validate(val);
+
+						// Convert
+						val = convertValueToDynamo(val);
+
+						var DynamoValue = {};
+						DynamoValue[Cls._properties[prop_name].type_code] = val;
+						AttributeUpdates[prop_name] = {
+							Action: 'PUT',
+							Value: DynamoValue,
+						};
+					}
+				} else {
+					console.error('Property not found', prop_name);
+					throw new Error('Property not found ' + prop_name);
+				}
+			});
+
+			// Allow History Tracking
+			if( Cls.$options.track_history ){
+
+				// This parameter Mapping is REQUIRED to make history tracking work
+				if(Cls.$type){
+					self.$type = Cls.$type;
+				}
+				// Allow dynamic mapping of parametrs
+				if(Cls.$paramMapping){
+					Cls.$paramMapping.forEach(function(map){
+						self[map.dest] = self[map.source];
+					});
+				}
+
+				// New objects wouldn't yet have a $hist object
+				var hist = self.$hist;
+				if(!hist){
+					hist = new History();
+				}
+				hist.obj = { $type: self.$type, $id: self.$id };
+				hist.new_obj = self.getSimplified();
+				// Allow adding in special options
+				if(log){
+					Object.keys(log).forEach(function(key){
+						hist[key] = log[key];
+					});
+				}
+
+				// Set the current date as the timestamp
+				hist.ts = new Date();
+				hist.save();
 			}
 
-			// New objects wouldn't yet have a $hist object
-			var hist = self.$hist;
-			if(!hist){
-				hist = new History();
-			}
-			hist.obj = { $type: self.$type, $id: self.$id };
-			hist.new_obj = self.getSimplified();
-			// Allow adding in special options
-			if(log){
-				Object.keys(log).forEach(function(key){
-					hist[key] = log[key];
-				});
-			}
+			updateItem(self, AttributeUpdates, function(err, data){
+				if(callback){
+					callback(err, data);
+				}
+				self.emit('afterUpdate', err, data);
+			});
 
-			// Set the current date as the timestamp
-			hist.ts = new Date();
-			hist.save();
 		}
 
-		updateItem(self, AttributeUpdates, function(err, data){
-			if(callback){
-				callback(err, data);
-			}
-			self.emit('afterUpdate', err, data);
-		});
+		// Allow before Update triggers, which
+		// allows us to intercept, block, and run
+		// asychronously
+		if(typeof self.beforeUpdate === 'function'){
+			self.beforeUpdate(doUpdateOperation, props);
+		} else {
+			doUpdateOperation();
+		}
+
 
 	};
 
@@ -717,7 +736,7 @@ function define(options){
 		var params = {};
 		Object.keys(Cls._properties).forEach(function(prop_name){
 			// Ignore any hidden properties
-			if(prop_name[0] != '_'){
+			if(prop_name[0] !== '_'){
 				params[prop_name] = null;
 			}
 		});
@@ -730,7 +749,7 @@ function define(options){
 				Object.keys(params).forEach(function(param_name){
 					// Only look if this history record isn't already found
 					if(params[param_name] === null){
-						if(!history.old_obj || (JSON.stringify(history.old_obj[param_name]) != JSON.stringify(history.new_obj[param_name])) ){
+						if(!history.old_obj || (JSON.stringify(history.old_obj[param_name]) !== JSON.stringify(history.new_obj[param_name])) ){
 							params[param_name] = {
 								user: history.user,
 								ts: history.ts,
@@ -781,14 +800,14 @@ function define(options){
 		opts = opts || {};
 		opts.TableName = Cls._table_name;
 		// Handle the next_fnc being bassed in as an ExclusiveStartKey
-		if(typeof opts.ExclusiveStartKey == 'function'){
+		if(typeof opts.ExclusiveStartKey === 'function'){
 			opts.ExclusiveStartKey(callback, opts);
 		} else {
 			dynamodb.scan(opts, function(err, data){
 				if(err){
 					// If the error is re-tryable, send along a 
 					// 'next function', which lets the user re-try this action
-					if(err && err.code && err.code == 'ProvisionedThroughputExceededException'){
+					if(err && err.code && err.code === 'ProvisionedThroughputExceededException'){
 						callback(err, data, delayFunction(Cls.scan, callback, opts));
 					} else {
 						callback(err, null);
@@ -832,9 +851,9 @@ function define(options){
 					expected_type = expected_prop.type_code;
 				}
 				// Decode into the Base Type
-				if(prop_type == 'N'){
+				if(prop_type === 'N'){
 					val = parseInt(val, 10);
-				} else if (expected_type == 'SS' && prop_type == 'S'){
+				} else if (expected_type === 'SS' && prop_type === 'S'){
 					val = [val];
 				}
 				// Decode into the JS type
@@ -842,7 +861,8 @@ function define(options){
 					try {
 						val = expected_prop.decode(val);
 					} catch (e) {
-						console.error('Could not decode property', prop_name, val, e);
+						console.error('Could not decode property', prop_name, val, e, item);
+						val = null;
 					}
 				}
 

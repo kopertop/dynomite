@@ -8,16 +8,16 @@ module.exports = function(grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 		jshint: {
-			all: ['Gruntfile.js', 'lib/**/*.js', 'tests/*.js'],
+			all: ['Gruntfile.js', 'lib/**/*.js'],
 			options: {
 				ignores: [
 					'lib/strftime.js',
 					'lib/socket.io-store-memcached/**',
 					'lib/**/*.min.js',
 				],
-				"-W099": false, // Allow mixing spaces and tabs (this can happen in comments)
-				"-W084": false, // Allow making assignments from within a While loop
-				"-W083": false, // Allow making functions in a loop
+				'-W099': false, // Allow mixing spaces and tabs (this can happen in comments)
+				'-W084': false, // Allow making assignments from within a While loop
+				'-W083': false, // Allow making functions in a loop
 			},
 		},
 		// Configure the Mocha Test and Istanbul Coverage report
