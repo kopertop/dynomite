@@ -172,6 +172,11 @@ function save(obj, callback, expected){
 					// Also set the value on the object so it is returned properly
 					obj[prop_name] = prop_val;
 				}
+				// Default values should be set on save
+				if( properties[prop_name].options.default && !prop_val ){
+					prop_val = properties[prop_name].options.default;
+					obj[prop_name] = prop_val;
+				}
 			}
 
 			// Encode if we have an encoder
