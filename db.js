@@ -173,7 +173,7 @@ function save(obj, callback, expected){
 					obj[prop_name] = prop_val;
 				}
 				// Default values should be set on save
-				if( properties[prop_name].options.default && !prop_val ){
+				if( properties[prop_name].options.default !== undefined && prop_val === undefined ){
 					prop_val = properties[prop_name].options.default;
 					obj[prop_name] = prop_val;
 				}
