@@ -5,12 +5,6 @@
  */
 'use strict';
 
-/*
-var AWS = require('aws-sdk');
-AWS.config.endpoint = new AWS.Endpoint('http://localhost:8888');
-AWS.config.update({accessKeyId: 'ASDAKJDFHASKJH', secretAccessKey: '98237498234lksdjfsa;lkfjrpo84a5laijksdf'});
-*/
-
 var assert = require('assert');
 var db = require('../db');
 var History = require('../resources/history').History;
@@ -70,36 +64,6 @@ beforeEach(function(){
 });
 
 describe('[DB]', function(){
-
-	/**
-	 * Set up the Mock DynamoDB Interface
-	 */
-	/*
-	before(function(done){
-		this.timeout(10000);
-		var dynalite = require('dynalite');
-		var dynaliteServer = dynalite({path: '/tmp/dynalite.db', createTableMs: 5, port: 8888});
-		// Create the "Test" DynamoDB Table
-		var ddb = new AWS.DynamoDB();
-		console.log('Creating Table');
-		ddb.createTable({
-			AttributeDefinitions: [
-				{ AttributeName: '$id', AttributeType: 'S' },
-			],
-			KeySchema: [
-				{ AttributeName: '$id', KeyType: 'HASH' },
-			],
-			ProvisionedThroughput: {
-				ReadCapacityUnits: 100,
-				WriteCapacityUnits: 100,
-			},
-			TableName: 'Test',
-		}, function(){
-			console.log('...done');
-			setTimeout(done, 500);
-		});
-	});
-	*/
 
 	it('Should create a new Test object in our "Tests" DynamoDB table', function(done){
 		var obj = new Test('foo');
