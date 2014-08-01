@@ -5,10 +5,6 @@
  */
 'use strict';
 
-var AWS = require('aws-sdk');
-AWS.config.endpoint = new AWS.Endpoint('http://localhost:8888');
-AWS.config.update({accessKeyId: 'ASDAKJDFHASKJH', secretAccessKey: '98237498234lksdjfsa;lkfjrpo84a5laijksdf'});
-
 var assert = require('assert');
 var db = require('../db');
 var History = require('../resources/history').History;
@@ -27,6 +23,10 @@ var Test = db.define({
 		stringSet: new db.types.SetProperty({ type: String, verbose_name: 'A list of strings'}),
 		numberSet: new db.types.SetProperty({ type: Number, verbose_name: 'A list of numbers'}),
 		jsonProperty: new db.types.JSONProperty(),
+		valueWithDefault: new db.types.NumberProperty({ default: 0 }),
+		valueWithPositiveDefault: new db.types.NumberProperty({ default: 10 }),
+		valueWithNegativeDefault: new db.types.NumberProperty({ default: -10 }),
+		stringWithDefault: new db.types.StringProperty({ default: 'SomeDefaultString' }),
 	}
 });
 var fake = db.define({
@@ -64,34 +64,6 @@ beforeEach(function(){
 });
 
 describe('[DB]', function(){
-
-	/**
-	 * Set up the Mock DynamoDB Interface
-	 */
-	before(function(done){
-		this.timeout(10000);
-		var dynalite = require('dynalite');
-		var dynaliteServer = dynalite({path: '/tmp/dynalite.db', createTableMs: 5, port: 8888});
-		// Create the "Test" DynamoDB Table
-		var ddb = new AWS.DynamoDB();
-		console.log('Creating Table');
-		ddb.createTable({
-			AttributeDefinitions: [
-				{ AttributeName: '$id', AttributeType: 'S' },
-			],
-			KeySchema: [
-				{ AttributeName: '$id', KeyType: 'HASH' },
-			],
-			ProvisionedThroughput: {
-				ReadCapacityUnits: 100,
-				WriteCapacityUnits: 100,
-			},
-			TableName: 'Test',
-		}, function(){
-			console.log('...done');
-			setTimeout(done, 500);
-		});
-	});
 
 	it('Should create a new Test object in our "Tests" DynamoDB table', function(done){
 		var obj = new Test('foo');
@@ -441,9 +413,38 @@ describe('[DB]', function(){
 			hookObj.set({ name: 'Test Name' });
 		});
 
-
-
-
-
 	});
+
+	// Check Defaults
+	describe('Defaults', function(){
+		it('Should automatically set the defaults', function(done){
+			var obj = new Test('TEST-OBJ');
+			obj.save(function(){
+				assert(obj.valueWithDefault === 0);
+				assert(obj.valueWithPositiveDefault === 10);
+				assert(obj.valueWithNegativeDefault === -10);
+				obj.remove(function(){
+					done();
+				});
+			});
+		});
+
+		it('Should not override a value with a default', function(done){
+			var obj = new Test('TEST-OBJ');
+			obj.valueWithDefault = 15;
+			obj.valueWithPositiveDefault = -25;
+			obj.valueWithNegativeDefault = 0;
+			obj.save(function(){
+				assert(obj.valueWithDefault === 15);
+				assert(obj.valueWithPositiveDefault === -25);
+				assert(obj.valueWithNegativeDefault === 0);
+				obj.remove(function(){
+					done();
+				});
+			});
+		});
+	});
+
+
+
 });
