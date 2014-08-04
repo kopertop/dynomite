@@ -12,7 +12,7 @@ var util = require('util');
  * @type options: object
  */
 function Property(options){
-	this.options = options;
+	this.options = options || {};
 	this.type_code = 'S';
 	this.encode_for_search = true;
 	if(options && options.validate){
