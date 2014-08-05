@@ -695,15 +695,18 @@ function define(options){
 		var ret = {};
 		Object.keys(Cls._properties).forEach(function(prop_name){
 			var prop = Cls._properties[prop_name];
-			var val = self[prop_name];
-			// Make sure the value is not empty, but allow 0
-			if(val !== undefined && val !== null && val !== ''){
-				// Allow the custom encode function to be fired here
-				if(prop.encode_for_search && prop.encode){
-					val = prop.encode(val);
+			// Ignore any hidden properties
+			if (!(prop && prop.options && prop.options.hidden === true)){
+				var val = self[prop_name];
+				// Make sure the value is not empty, but allow 0
+				if(val !== undefined && val !== null && val !== ''){
+					// Allow the custom encode function to be fired here
+					if(prop.encode_for_search && prop.encode){
+						val = prop.encode(val);
+					}
+					// If the property name starts with a $, remove it
+					ret[prop_name.replace('$', '')] = val;
 				}
-				// If the property name starts with a $, remove it
-				ret[prop_name.replace('$', '')] = val;
 			}
 		});
 		return ret;
