@@ -256,6 +256,8 @@ function FileProperty(options){
 	 * @param callback: The callback to fire with the response metadata
 	 */
 	this.getUploadMetadata = function getUploadMetadata(obj, callback){
+		var self = this;
+
 		// Allow parameterizing the Prefix, with things like ${ts}
 		// for version handling, and ${id} for identifying what object
 		// this belongs to
@@ -267,19 +269,24 @@ function FileProperty(options){
 		var policy_document = {
 			expiration: moment.utc().add('1', 'hour').format('YYYY-MM-DDTHH:mm:ssZ'),
 			conditions: [
-				{ bucket: this.options.bucket },
-				{ acl: this.options.acl || 'private' },
+				{ bucket: self.options.bucket },
+				{ acl: self.options.acl || 'private' },
 				[ 'starts-with', '$key', prefix ],
-				[ 'starts-with', '$Content-Type', this.options.content_type || '' ],
-				[ 'starts-with', '$filename', this.options.filename || '' ],
+				[ 'starts-with', '$Content-Type', self.options.content_type || '' ],
+				[ 'starts-with', '$filename', self.options.filename_prefix || '' ],
 			],
 		};
+		var policy_string = AWS.util.base64.encode(JSON.stringify(policy_document));
 		AWS.config.getCredentials(function(err, credentials){
-			var signature = AWS.util.crypto.hmac(credentials.secretAccessKey, JSON.stringify(policy_document), 'base64', 'sha1');
+			var signature = AWS.util.crypto.hmac(credentials.secretAccessKey, policy_string, 'base64', 'sha1');
 			callback({
-				policy: policy_document,
+				prefix: prefix + self.options.filename_prefix || '',
+				AWSAccessKeyId: credentials.accessKeyId,
+				acl: self.options.acl || 'private',
+				policy: policy_string,
 				signature: signature,
-				prefix: prefix,
+				url: 'https://' + self.options.bucket + '.s3.amazonaws.com/',
+				'Content-Type': self.options.content_type || '',
 			});
 		});
 	};
