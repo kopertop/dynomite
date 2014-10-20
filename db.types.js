@@ -3,7 +3,8 @@
  *
  * @author: Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, exports */
+'use strict';
+
 var util = require('util');
 
 /**
@@ -130,7 +131,7 @@ function BooleanProperty(options){
 	};
 
 	this.decode = function decodeBoolean(val){
-		if(val == 1){
+		if(val === 1){
 			return true;
 		} else if (val === 0) {
 			return false;
@@ -152,9 +153,9 @@ function DateTimeProperty(options){
 	this.type_code = 'N';
 	this.encode = function(val){
 		if(val){
-			if(typeof val == 'string'){
+			if(typeof val === 'string'){
 				val = Math.round(new Date(val).getTime()/1000);
-			} else if(typeof val == 'object'){
+			} else if(typeof val === 'object'){
 				val = Math.round(val.getTime()/1000);
 			}
 		}
@@ -162,9 +163,9 @@ function DateTimeProperty(options){
 	};
 	this.decode = function(val){
 		if(val){
-			if(typeof val == 'number'){
+			if(typeof val === 'number'){
 				val = new Date(val*1000);
-			} else if (typeof val == 'string'){
+			} else if (typeof val === 'string'){
 				val = new Date(val);
 			}
 		}
@@ -179,7 +180,7 @@ util.inherits(DateTimeProperty, Property);
  */
 function SetProperty(options){
 	Property.call(this, options);
-	if(options.type == Number || options.type == Boolean){
+	if(options.type === Number || options.type === Boolean){
 		this.type_code = 'NS';
 	} else {
 		this.type_code = 'SS';
@@ -197,7 +198,7 @@ function ListProperty(options){
 	this.encode_for_search = false; // Do not allow encoding for search indexing
 
 	this.encode = function encodeList(val){
-		if(val !== null && typeof val == 'object' && typeof val.join == 'function'){
+		if(val !== null && typeof val === 'object' && typeof val.join === 'function'){
 			val = val.join(GROUP_SEPARATOR);
 		}
 		if(!val || val.length === 0){
@@ -207,7 +208,7 @@ function ListProperty(options){
 	};
 
 	this.decode = function decodeList(val){
-		if(typeof val == 'string'){
+		if(typeof val === 'string'){
 			val = val.split(GROUP_SEPARATOR);
 		}
 		return val;
