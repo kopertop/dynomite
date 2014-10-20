@@ -280,7 +280,7 @@ function FileProperty(options){
 		AWS.config.getCredentials(function(err, credentials){
 			var signature = AWS.util.crypto.hmac(credentials.secretAccessKey, policy_string, 'base64', 'sha1');
 			callback({
-				prefix: prefix + self.options.filename_prefix || '',
+				prefix: prefix + (self.options.filename_prefix || ''),
 				AWSAccessKeyId: credentials.accessKeyId,
 				acl: self.options.acl || 'private',
 				policy: policy_string,
