@@ -3,8 +3,11 @@
  *
  * @author: Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, exports */
+'use strict';
+
 var util = require('util');
+var moment = require('moment');
+var AWS = require('aws-sdk');
 
 /**
  * Base Property
@@ -130,7 +133,7 @@ function BooleanProperty(options){
 	};
 
 	this.decode = function decodeBoolean(val){
-		if(val == 1){
+		if(val === 1){
 			return true;
 		} else if (val === 0) {
 			return false;
@@ -152,9 +155,9 @@ function DateTimeProperty(options){
 	this.type_code = 'N';
 	this.encode = function(val){
 		if(val){
-			if(typeof val == 'string'){
+			if(typeof val === 'string'){
 				val = Math.round(new Date(val).getTime()/1000);
-			} else if(typeof val == 'object'){
+			} else if(typeof val === 'object'){
 				val = Math.round(val.getTime()/1000);
 			}
 		}
@@ -162,9 +165,9 @@ function DateTimeProperty(options){
 	};
 	this.decode = function(val){
 		if(val){
-			if(typeof val == 'number'){
+			if(typeof val === 'number'){
 				val = new Date(val*1000);
-			} else if (typeof val == 'string'){
+			} else if (typeof val === 'string'){
 				val = new Date(val);
 			}
 		}
@@ -179,7 +182,7 @@ util.inherits(DateTimeProperty, Property);
  */
 function SetProperty(options){
 	Property.call(this, options);
-	if(options.type == Number || options.type == Boolean){
+	if(options.type === Number || options.type === Boolean){
 		this.type_code = 'NS';
 	} else {
 		this.type_code = 'SS';
@@ -197,7 +200,7 @@ function ListProperty(options){
 	this.encode_for_search = false; // Do not allow encoding for search indexing
 
 	this.encode = function encodeList(val){
-		if(val !== null && typeof val == 'object' && typeof val.join == 'function'){
+		if(val !== null && typeof val === 'object' && typeof val.join === 'function'){
 			val = val.join(GROUP_SEPARATOR);
 		}
 		if(!val || val.length === 0){
@@ -207,13 +210,89 @@ function ListProperty(options){
 	};
 
 	this.decode = function decodeList(val){
-		if(typeof val == 'string'){
+		if(typeof val === 'string'){
 			val = val.split(GROUP_SEPARATOR);
 		}
 		return val;
 	};
 }
 util.inherits(ListProperty, Property);
+
+/**
+ * File property, Stored in S3
+ * @param bucket: Name of the bucket to store to
+ * @param prefix: Optional string to prefix every file with
+ */
+function FileProperty(options){
+	Property.call(this, options);
+	this.type_code = 'S';
+	this.encode_for_search = false; // Do not allow encoding for search indexing
+
+	this.encode = function encodeFile(val){
+		// Null and undefined gets passed through
+		if(val === undefined || val === null){ return val; }
+
+		// Only store the S3 URL
+		if(val.url){
+			val = val.url;
+		}
+		return val;
+	};
+
+	this.decode = function decodeFile(val){
+		// Null and undefined gets passed through
+		if(val === undefined || val === null){ return val; }
+
+		// Decode a single string into a full Metadata object
+		if(typeof val === 'string'){
+			val = { url: val };
+		}
+		return val;
+	};
+
+	/**
+	 * Gets the Metadata for uploading a new version
+	 * @param obj: The object this metadata upload is for
+	 * @param callback: The callback to fire with the response metadata
+	 */
+	this.getUploadMetadata = function getUploadMetadata(obj, callback){
+		var self = this;
+
+		// Allow parameterizing the Prefix, with things like ${ts}
+		// for version handling, and ${id} for identifying what object
+		// this belongs to
+		var prefix = this.options.prefix || '${id}/${ts}/';
+		var now = new Date();
+		prefix = prefix.replace('${ts}', now.getTime());
+		prefix = prefix.replace('${id}', obj.$id);
+
+		var policy_document = {
+			expiration: moment.utc().add('1', 'hour').format('YYYY-MM-DDTHH:mm:ssZ'),
+			conditions: [
+				{ bucket: self.options.bucket },
+				{ acl: self.options.acl || 'private' },
+				[ 'starts-with', '$key', prefix ],
+				[ 'starts-with', '$Content-Type', self.options.content_type || '' ],
+				[ 'starts-with', '$filename', self.options.filename_prefix || '' ],
+			],
+		};
+		var policy_string = AWS.util.base64.encode(JSON.stringify(policy_document));
+		AWS.config.getCredentials(function(err, credentials){
+			var signature = AWS.util.crypto.hmac(credentials.secretAccessKey, policy_string, 'base64', 'sha1');
+			callback({
+				prefix: prefix + (self.options.filename_prefix || ''),
+				AWSAccessKeyId: credentials.accessKeyId,
+				acl: self.options.acl || 'private',
+				policy: policy_string,
+				signature: signature,
+				url: 'https://' + self.options.bucket + '.s3.amazonaws.com/',
+				'Content-Type': self.options.content_type || '',
+			});
+		});
+	};
+}
+util.inherits(FileProperty, Property);
+
 
 
 exports.Property = Property;
@@ -225,3 +304,4 @@ exports.BooleanProperty = BooleanProperty;
 exports.DateTimeProperty = DateTimeProperty;
 exports.SetProperty = SetProperty;
 exports.ListProperty = ListProperty;
+exports.FileProperty = FileProperty;

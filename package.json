@@ -1,31 +1,32 @@
 {
-	"author": "Chris Moyer <cmoyer@newstex.com>",
-	"name": "dynomite",
-	"description": "Simple ORM for AWS DynamoDB",
-	"version": "0.4.4",
-	"main": "db.js",
-	"repository": {
-		"type": "git",
-		"url": "http://bitbucket.org/developer/dynomite"
-	},
-	"scripts": {
-		"test": "mocha tests"
-	},
-	"dependencies": {
-		"aws-sdk": ">=1.8.1",
-		"node-uuid": "*",
-		"grunt": "*",
-		"grunt-contrib-jshint": "*",
-		"grunt-mocha-istanbul": "*",
-		"thirty-two": "*"
-	},
-	"devDependencies": {
-		"mocha": "*",
-		"should": "*"
-	},
-	"keywords": [
-		"data",
-		"model"
-	],
-	"license": "MIT"
+  "author": "Chris Moyer <cmoyer@newstex.com>",
+  "name": "dynomite",
+  "description": "Simple ORM for AWS DynamoDB",
+  "version": "0.4.5",
+  "main": "db.js",
+  "repository": {
+    "type": "git",
+    "url": "http://bitbucket.org/developer/dynomite"
+  },
+  "scripts": {
+    "test": "mocha tests"
+  },
+  "dependencies": {
+    "aws-sdk": ">=1.8.1",
+    "grunt": "*",
+    "grunt-contrib-jshint": "*",
+    "grunt-mocha-istanbul": "*",
+    "moment": "^2.8.3",
+    "node-uuid": "*",
+    "thirty-two": "*"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "should": "*"
+  },
+  "keywords": [
+    "data",
+    "model"
+  ],
+  "license": "MIT"
 }
