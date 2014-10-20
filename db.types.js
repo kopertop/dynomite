@@ -6,6 +6,8 @@
 'use strict';
 
 var util = require('util');
+var moment = require('moment');
+var AWS = require('aws-sdk');
 
 /**
  * Base Property
@@ -216,6 +218,75 @@ function ListProperty(options){
 }
 util.inherits(ListProperty, Property);
 
+/**
+ * File property, Stored in S3
+ * @param bucket: Name of the bucket to store to
+ * @param prefix: Optional string to prefix every file with
+ */
+function FileProperty(options){
+	Property.call(this, options);
+	this.type_code = 'S';
+	this.encode_for_search = false; // Do not allow encoding for search indexing
+
+	this.encode = function encodeFile(val){
+		// Null and undefined gets passed through
+		if(val === undefined || val === null){ return val; }
+
+		// Only store the S3 URL
+		if(val.url){
+			val = val.url;
+		}
+		return val;
+	};
+
+	this.decode = function decodeFile(val){
+		// Null and undefined gets passed through
+		if(val === undefined || val === null){ return val; }
+
+		// Decode a single string into a full Metadata object
+		if(typeof val === 'string'){
+			val = { url: val };
+		}
+		return val;
+	};
+
+	/**
+	 * Gets the Metadata for uploading a new version
+	 * @param obj: The object this metadata upload is for
+	 * @param callback: The callback to fire with the response metadata
+	 */
+	this.getUploadMetadata = function getUploadMetadata(obj, callback){
+		// Allow parameterizing the Prefix, with things like ${ts}
+		// for version handling, and ${id} for identifying what object
+		// this belongs to
+		var prefix = this.options.prefix || '${id}/${ts}/';
+		var now = new Date();
+		prefix = prefix.replace('${ts}', now.getTime());
+		prefix = prefix.replace('${id}', obj.$id);
+
+		var policy_document = {
+			expiration: moment.utc().add('1', 'hour').format('YYYY-MM-DDTHH:mm:ssZ'),
+			conditions: [
+				{ bucket: this.options.bucket },
+				{ acl: this.options.acl || 'private' },
+				[ 'starts-with', '$key', prefix ],
+				[ 'starts-with', '$Content-Type', this.options.content_type || '' ],
+				[ 'starts-with', '$filename', this.options.filename || '' ],
+			],
+		};
+		AWS.config.getCredentials(function(err, credentials){
+			var signature = AWS.util.crypto.hmac(credentials.secretAccessKey, JSON.stringify(policy_document), 'base64', 'sha1');
+			callback({
+				policy: policy_document,
+				signature: signature,
+				prefix: prefix,
+			});
+		});
+	};
+}
+util.inherits(FileProperty, Property);
+
+
 
 exports.Property = Property;
 exports.StringProperty = StringProperty;
@@ -226,3 +297,4 @@ exports.BooleanProperty = BooleanProperty;
 exports.DateTimeProperty = DateTimeProperty;
 exports.SetProperty = SetProperty;
 exports.ListProperty = ListProperty;
+exports.FileProperty = FileProperty;
