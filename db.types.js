@@ -247,7 +247,7 @@ function FileProperty(options){
 		prefix = prefix.replace('${id}', obj.$id);
 
 		var policy_document = {
-			expiration: moment.utc().add('1', 'hour').format('YYYY-MM-DDTHH:mm:ssZ'),
+			expiration: moment.utc().add('1', 'hour').format('YYYY-MM-DDTHH:mm:ss') + 'Z',
 			conditions: [
 				{ bucket: self.options.bucket },
 				{ acl: self.options.acl || 'private' },
@@ -256,6 +256,7 @@ function FileProperty(options){
 				[ 'starts-with', '$filename', self.options.filename_prefix || '' ],
 			],
 		};
+		console.log(policy_document.expiration);
 		var policy_string = AWS.util.base64.encode(JSON.stringify(policy_document));
 		AWS.config.getCredentials(function(err, credentials){
 			var signature = AWS.util.crypto.hmac(credentials.secretAccessKey, policy_string, 'base64', 'sha1');
