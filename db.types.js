@@ -259,7 +259,7 @@ function FileProperty(options){
 		var policy_string = AWS.util.base64.encode(JSON.stringify(policy_document));
 		AWS.config.getCredentials(function(err, credentials){
 			var signature = AWS.util.crypto.hmac(credentials.secretAccessKey, policy_string, 'base64', 'sha1');
-			callback({
+			var metadata = {
 				prefix: prefix + (self.options.filename_prefix || ''),
 				AWSAccessKeyId: credentials.accessKeyId,
 				acl: self.options.acl || 'private',
@@ -267,7 +267,12 @@ function FileProperty(options){
 				signature: signature,
 				url: 'https://' + self.options.bucket + '.s3.amazonaws.com/',
 				'Content-Type': self.options.content_type || '',
-			});
+			};
+			// Adds support for IAM Roles
+			if(credentials.sessionToken){
+				metadata['x-amz-security-token'] = credentials.sessionToken;
+			}
+			callback(metadata);
 		});
 	};
 }
