@@ -220,35 +220,15 @@ util.inherits(ListProperty, Property);
 
 /**
  * File property, Stored in S3
+ * The actual data stored here is just a JSON blob of metadata.
+ * do NOT set the contents of the file as the property here. Use something like
+ * https://github.com/danialfarid/angular-file-upload
+ *
  * @param bucket: Name of the bucket to store to
  * @param prefix: Optional string to prefix every file with
  */
 function FileProperty(options){
-	Property.call(this, options);
-	this.type_code = 'S';
-	this.encode_for_search = false; // Do not allow encoding for search indexing
-
-	this.encode = function encodeFile(val){
-		// Null and undefined gets passed through
-		if(val === undefined || val === null){ return val; }
-
-		// Only store the S3 URL
-		if(val.url){
-			val = val.url;
-		}
-		return val;
-	};
-
-	this.decode = function decodeFile(val){
-		// Null and undefined gets passed through
-		if(val === undefined || val === null){ return val; }
-
-		// Decode a single string into a full Metadata object
-		if(typeof val === 'string'){
-			val = { url: val };
-		}
-		return val;
-	};
+	JSONProperty.call(this, options);
 
 	/**
 	 * Gets the Metadata for uploading a new version
@@ -291,7 +271,7 @@ function FileProperty(options){
 		});
 	};
 }
-util.inherits(FileProperty, Property);
+util.inherits(FileProperty, JSONProperty);
 
 
 
