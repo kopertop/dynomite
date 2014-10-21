@@ -254,11 +254,14 @@ function FileProperty(options){
 				[ 'starts-with', '$key', prefix ],
 				[ 'starts-with', '$Content-Type', self.options.content_type || '' ],
 				[ 'starts-with', '$filename', self.options.filename_prefix || '' ],
+				[ 'starts-with', '$success_action_redirect', '' ],
 			],
 		};
-		console.log(policy_document.expiration);
-		var policy_string = AWS.util.base64.encode(JSON.stringify(policy_document));
 		AWS.config.getCredentials(function(err, credentials){
+			if(credentials.sessionToken){
+				policy_document.conditions.push({ 'x-amz-security-token': credentials.sessionToken });
+			}
+			var policy_string = AWS.util.base64.encode(JSON.stringify(policy_document));
 			var signature = AWS.util.crypto.hmac(credentials.secretAccessKey, policy_string, 'base64', 'sha1');
 			var metadata = {
 				prefix: prefix + (self.options.filename_prefix || ''),
