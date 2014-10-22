@@ -10,6 +10,7 @@ AWS.config.update({region: 'us-east-1'});
 var dynamodb = new AWS.DynamoDB();
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
+var _ = require('lodash');
 
 /**
  * Delayed function call
@@ -355,6 +356,49 @@ function scan(model, opts, callback){
 	dynamodb.scan(scanOpts, function(err, data){
 		listIterator(model, callback, err, data, opts, scan);
 	});
+}
+
+
+/**
+ * Decode a dynamo Property
+ */
+function decodeDynamoProperty(prop_val, prop_name, Cls){
+	var ret_value = null;
+	_.forOwn(prop_val, function(val, prop_type){
+		// Check what we expected
+		var expected_prop = Cls._properties[prop_name];
+		var expected_type = null;
+		if(expected_prop){
+			expected_type = expected_prop.type_code;
+		}
+		// Decode into the Base Type
+		if(prop_type === 'N'){
+			val = parseInt(val, 10);
+		} else if (prop_type === 'M'){
+			// MAP type
+			_.forOwn(val, function(v, k){
+				val[k] = decodeDynamoProperty(v, k, Cls);
+			});
+		} else if (expected_type === 'SS' && prop_type === 'S'){
+			val = [val];
+		} else {
+		}
+		// Decode into the JS type
+		if(expected_prop && expected_prop.decode !== undefined){
+			try {
+				val = expected_prop.decode(val);
+			} catch (e) {
+				console.error('Could not decode property', prop_name, val, e, prop_val);
+				val = null;
+			}
+		}
+		if(ret_value === null){
+			ret_value = val;
+		} else {
+			ret_value.push(val);
+		}
+	});
+	return ret_value;
 }
 
 /**
@@ -845,32 +889,7 @@ function define(options){
 		for (var prop_name in item){
 			var prop_val = item[prop_name];
 			// Converts the Dynamo Types into simple JSON types
-			for( var prop_type in prop_val){
-				var val = item[prop_name][prop_type];
-				// Check what we expected
-				var expected_prop = Cls._properties[prop_name];
-				var expected_type = null;
-				if(expected_prop){
-					expected_type = expected_prop.type_code;
-				}
-				// Decode into the Base Type
-				if(prop_type === 'N'){
-					val = parseInt(val, 10);
-				} else if (expected_type === 'SS' && prop_type === 'S'){
-					val = [val];
-				}
-				// Decode into the JS type
-				if(expected_prop && expected_prop.decode !== undefined){
-					try {
-						val = expected_prop.decode(val);
-					} catch (e) {
-						console.error('Could not decode property', prop_name, val, e, item);
-						val = null;
-					}
-				}
-
-				obj[prop_name] = val;
-			}
+			obj[prop_name] = decodeDynamoProperty(prop_val, prop_name, Cls);
 		}
 
 		// Allow dynamic mapping of parametrs

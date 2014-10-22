@@ -247,19 +247,23 @@ function FileProperty(options){
 		prefix = prefix.replace('${id}', obj.$id);
 
 		var policy_document = {
-			expiration: moment.utc().add('1', 'hour').format('YYYY-MM-DDTHH:mm:ssZ'),
+			expiration: moment.utc().add('1', 'hour').format('YYYY-MM-DDTHH:mm:ss') + 'Z',
 			conditions: [
 				{ bucket: self.options.bucket },
 				{ acl: self.options.acl || 'private' },
 				[ 'starts-with', '$key', prefix ],
 				[ 'starts-with', '$Content-Type', self.options.content_type || '' ],
 				[ 'starts-with', '$filename', self.options.filename_prefix || '' ],
+				[ 'starts-with', '$success_action_redirect', '' ],
 			],
 		};
-		var policy_string = AWS.util.base64.encode(JSON.stringify(policy_document));
 		AWS.config.getCredentials(function(err, credentials){
+			if(credentials.sessionToken){
+				policy_document.conditions.push({ 'x-amz-security-token': credentials.sessionToken });
+			}
+			var policy_string = AWS.util.base64.encode(JSON.stringify(policy_document));
 			var signature = AWS.util.crypto.hmac(credentials.secretAccessKey, policy_string, 'base64', 'sha1');
-			callback({
+			var metadata = {
 				prefix: prefix + (self.options.filename_prefix || ''),
 				AWSAccessKeyId: credentials.accessKeyId,
 				acl: self.options.acl || 'private',
@@ -267,11 +271,26 @@ function FileProperty(options){
 				signature: signature,
 				url: 'https://' + self.options.bucket + '.s3.amazonaws.com/',
 				'Content-Type': self.options.content_type || '',
-			});
+			};
+			// Adds support for IAM Roles
+			if(credentials.sessionToken){
+				metadata['x-amz-security-token'] = credentials.sessionToken;
+			}
+			callback(metadata);
 		});
 	};
 }
 util.inherits(FileProperty, JSONProperty);
+
+/**
+ * Map Property
+ */
+function MapProperty(options){
+	Property.call(this, options);
+	this.type_code = 'M';
+}
+util.inherits(StringProperty, Property);
+
 
 
 
