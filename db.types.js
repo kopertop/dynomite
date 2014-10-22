@@ -282,6 +282,16 @@ function FileProperty(options){
 }
 util.inherits(FileProperty, JSONProperty);
 
+/**
+ * Map Property
+ */
+function MapProperty(options){
+	Property.call(this, options);
+	this.type_code = 'M';
+}
+util.inherits(StringProperty, Property);
+
+
 
 
 exports.Property = Property;
