@@ -120,22 +120,22 @@ util.inherits(NumberProperty, Property);
  */
 function BooleanProperty(options){
 	Property.call(this, options);
-	this.type_code = 'N';
+	this.type_code = 'BOOL';
 
 	this.encode = function encodeBoolean(val){
 		if(val){
-			return 1;
+			return true;
 		} else if (val !== undefined) {
-			return 0;
+			return false;
 		} else {
 			return undefined;
 		}
 	};
 
 	this.decode = function decodeBoolean(val){
-		if(val === 1){
+		if(val === 1 || val === true){
 			return true;
-		} else if (val === 0) {
+		} else if (val === 0 || val === false) {
 			return false;
 		} else {
 			return undefined;

@@ -79,14 +79,14 @@ describe('db.types', function(){
 
 		it('Should encode/decode a true value property', function(){
 			var output = prop.encode(true);
-			assert.equal(output, 1);
-			assert.equal(prop.encode(output), true);
+			assert.equal(output, true);
+			assert.equal(prop.encode(1), true);
 		});
 
 		it('Should encode/decode a false value property', function(){
 			var output = prop.encode(false);
-			assert.equal(output, 0);
-			assert.equal(prop.encode(output), false);
+			assert.equal(output, false);
+			assert.equal(prop.encode(0), false);
 		});
 
 		it('Should handle undefined values', function(){
