@@ -120,11 +120,36 @@ function batchLookup(model, ids, callback, opts){
 /**
  * Generic function to convert a value to the dynamo form
  */
-function convertValueToDynamo(val){
+function convertValueToDynamo(val, type_code){
 	if(typeof val === 'number'){
+		if(type_code === undefined){
+			type_code = 'N';
+		}
 		val = String(val);
+	} else if (util.isArray(val)){
+		if(type_code === undefined){
+			type_code = 'L';
+		}
+		// Convert each item in the list to the type of value it is
+		var vals = [];
+		val.forEach(function(v, $index){
+			// Lists could be either the 'L' type, or a Set type
+			if(type_code && type_code.length === 2 && type_code[1] === 'S'){
+				// If we're a Set, don't encode
+				// the type-code with every sub-value
+				vals.push(convertValueToDynamo(v, null));
+			} else {
+				// Otherwise we just want to infer what type
+				// we are from the type of value passed in
+				vals.push(convertValueToDynamo(v));
+			}
+		});
+		val = vals;
 	} else if (typeof val === 'object'){
 		if(val instanceof Date){
+			if(type_code === undefined){
+				type_code = 'N';
+			}
 			val = String(val.getTime());
 			// Prevent invalid dates
 			if(val === 'NaN'){
@@ -132,7 +157,19 @@ function convertValueToDynamo(val){
 			}
 		}
 	}
-	return val;
+	// The default type code is String
+	if(type_code === undefined){
+		type_code = 'S';
+	}
+	// This allows us to pass "null", (different from undefined) to explicitly
+	// exclude returning the format { type_code: val }
+	if(type_code !== null){
+		var ret = {};
+		ret[type_code] = val;
+		return ret;
+	} else {
+		return val;
+	}
 }
 
 /**
@@ -186,18 +223,11 @@ function save(obj, callback, expected){
 			}
 
 
+			// Make sure this is a non-null, non-empty value
 			if(typeof prop_val !== 'undefined' && prop_val !== null && (typeof prop_val !== 'object' || !(prop_val instanceof Array) || prop_val.length > 0)){
 				obj_values[prop_name] = {};
-				if(prop_type.length === 2 && prop_type[1] === 'S'){
-					for (var n in prop_val){
-						prop_val[n] = convertValueToDynamo(prop_val[n]);
-					}
-				} else {
-					prop_val = convertValueToDynamo(prop_val);
-				}
-				var Value = {};
-				Value[prop_type] = prop_val;
-				obj_values[prop_name] = { Action: 'PUT', Value: Value };
+				prop_val = convertValueToDynamo(prop_val, prop_type);
+				obj_values[prop_name] = { Action: 'PUT', Value: prop_val };
 			} else {
 				obj_values[prop_name] = { Action: 'DELETE' };
 			}
@@ -381,6 +411,14 @@ function decodeDynamoProperty(prop_val, prop_name, Cls){
 			});
 		} else if (expected_type === 'SS' && prop_type === 'S'){
 			val = [val];
+		} else if (prop_type === 'L'){
+			var listValue = [];
+			val.forEach(function(v){
+				// We intentionally do NOT want to send the prop_name here, because
+				// we don't want the decode function to be called on every sub-value
+				listValue.push(decodeDynamoProperty(v, null, Cls));
+			});
+			val = listValue;
 		} else {
 		}
 		// Decode into the JS type
@@ -567,12 +605,9 @@ function define(options){
 		Object.keys(props).forEach(function(prop_name){
 			if(Cls._properties[prop_name]){
 				var val = props[prop_name];
-				val = convertValueToDynamo(val);
-				var DynamoValue = {};
-				DynamoValue[Cls._properties[prop_name].type_code] = val;
 				AttributeUpdates[prop_name] = {
 					Action: 'ADD',
-					Value: DynamoValue,
+					Value: convertValueToDynamo(val, Cls._properties[prop_name].type_code),
 				};
 				updateItem(self, AttributeUpdates, callback);
 			} else {
@@ -618,13 +653,9 @@ function define(options){
 					self[prop_name] = val;
 					val = prop.encode(val);
 					// Convert
-					val = convertValueToDynamo(val);
-
-					var DynamoValue = {};
-					DynamoValue[Cls._properties[prop_name].type_code] = val;
 					AttributeUpdates[prop_name] = {
 						Action: 'PUT',
-						Value: DynamoValue,
+						Value: convertValueToDynamo(val, Cls._properties[prop_name].type_code),
 					};
 
 				}
@@ -652,13 +683,9 @@ function define(options){
 						prop.validate(val);
 
 						// Convert
-						val = convertValueToDynamo(val);
-
-						var DynamoValue = {};
-						DynamoValue[Cls._properties[prop_name].type_code] = val;
 						AttributeUpdates[prop_name] = {
 							Action: 'PUT',
-							Value: DynamoValue,
+							Value: convertValueToDynamo(val, Cls._properties[prop_name].type_code),
 						};
 					}
 				} else {
@@ -923,3 +950,6 @@ function define(options){
 
 exports.define = define;
 exports.types = require('./db.types.js');
+
+// Exported just for tests
+exports.convertValueToDynamo = convertValueToDynamo;
