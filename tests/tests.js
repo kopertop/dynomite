@@ -468,5 +468,17 @@ describe('[DB]', function(){
 		});
 	});
 
+	// Make sure the old-style List object will be properly decoded as well
+	it('Should be backwards compatible with old-style List values', function(){
+		var listValues = ['Z', 'A', 'B', 'G', '0'];
+		var obj = Test.from_dynamo({
+			someList: { S: listValues.join('\x1d') },
+		});
+		obj.someList.should.be.instanceof(Array).and.have.lengthOf(listValues.length);
+		obj.someList.forEach(function(value, x){
+			value.should.be.equal(listValues[x]);
+		});
+
+	});
 
 });
