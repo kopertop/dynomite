@@ -28,29 +28,6 @@ describe('db.types', function(){
 
 	});
 
-	// Ordered List Property
-	describe('List Property', function(){
-		var prop = new types.ListProperty({ verbose_name: 'Some List Property'});
-
-		it('Should properly encode a ListProperty and return it in the same order', function(){
-			var testList = ['A', 1, 5, 'C', 'A', 0, 19, 'Z'];
-			var output = prop.encode(testList);
-			assert.equal(typeof output, 'string');
-			assert.deepEqual(prop.decode(output), testList);
-		});
-
-		it('Should handle a null value', function(){
-			var output = prop.encode(null);
-			assert.equal(output, null);
-		});
-
-		it('Should return an empty list being a null value', function(){
-			var output = prop.encode([]);
-			assert.equal(output, null);
-		});
-
-	});
-
 	// DateTime Property
 	describe('DateTime Property', function(){
 		var prop = new types.DateTimeProperty({ verbose_name: 'Some DateTime Property'});

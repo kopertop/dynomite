@@ -196,18 +196,7 @@ util.inherits(SetProperty, Property);
 var GROUP_SEPARATOR = '\x1d';
 function ListProperty(options){
 	Property.call(this, options);
-	this.type_code = 'S';
-	this.encode_for_search = false; // Do not allow encoding for search indexing
-
-	this.encode = function encodeList(val){
-		if(val !== null && typeof val === 'object' && typeof val.join === 'function'){
-			val = val.join(GROUP_SEPARATOR);
-		}
-		if(!val || val.length === 0){
-			val = null;
-		}
-		return val;
-	};
+	this.type_code = 'L';
 
 	this.decode = function decodeList(val){
 		if(typeof val === 'string'){
@@ -215,6 +204,7 @@ function ListProperty(options){
 		}
 		return val;
 	};
+
 }
 util.inherits(ListProperty, Property);
 

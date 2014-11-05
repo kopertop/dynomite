@@ -6,6 +6,7 @@
 'use strict';
 
 var assert = require('assert');
+var should = require('should');
 var db = require('../db');
 var History = require('../resources/history').History;
 
@@ -27,6 +28,7 @@ var Test = db.define({
 		valueWithPositiveDefault: new db.types.NumberProperty({ default: 10 }),
 		valueWithNegativeDefault: new db.types.NumberProperty({ default: -10 }),
 		stringWithDefault: new db.types.StringProperty({ default: 'SomeDefaultString' }),
+		someList: new db.types.ListProperty(),
 	}
 });
 var fake = db.define({
@@ -445,6 +447,38 @@ describe('[DB]', function(){
 		});
 	});
 
+	// Check the List property
+	it('Should return a list in the same order we created it', function(done){
+		this.timeout(8000);
+		var obj = new Test('TEST-OBJ-LIST');
+		var listValues = [1, 'A', 'foo', 'z', 0, 19, 5, 'Zoomba', 'Decimal', 12345, 8];
+		obj.someList = listValues;
+		obj.save(function(){
+			setTimeout(function(){
+				Test.lookup('TEST-OBJ-LIST', function(obj){
+					obj.someList.should.be.instanceof(Array).and.have.lengthOf(listValues.length);
+					obj.someList.forEach(function(value, x){
+						value.should.be.equal(listValues[x]);
+					});
+					obj.remove(function(){
+						done();
+					});
+				});
+			}, 500);
+		});
+	});
 
+	// Make sure the old-style List object will be properly decoded as well
+	it('Should be backwards compatible with old-style List values', function(){
+		var listValues = ['Z', 'A', 'B', 'G', '0'];
+		var obj = Test.from_dynamo({
+			someList: { S: listValues.join('\x1d') },
+		});
+		obj.someList.should.be.instanceof(Array).and.have.lengthOf(listValues.length);
+		obj.someList.forEach(function(value, x){
+			value.should.be.equal(listValues[x]);
+		});
+
+	});
 
 });
