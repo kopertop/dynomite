@@ -917,6 +917,7 @@ function define(options){
 			var prop_val = item[prop_name];
 			// Converts the Dynamo Types into simple JSON types
 			obj[prop_name] = decodeDynamoProperty(prop_val, prop_name, Cls);
+			console.log('from_dynamo', prop_name, prop_val, obj[prop_name]);
 		}
 
 		// Allow dynamic mapping of parametrs

@@ -4,6 +4,7 @@
 'use strict';
 
 var assert = require('assert');
+var should = require('should');
 var types = require('../db.types');
 
 describe('db.types', function(){
@@ -73,6 +74,32 @@ describe('db.types', function(){
 		
 
 	});
+
+	// Set property
+	describe('Set Property', function(){
+		var RefObj = { $id: 'SOME-ID', $type: 'SOME-TYPE', name: 'My Name', foo: [1,2,3] };
+
+		it('Should not touch SetProperty with no $type or simple:true flag set', function(){
+			var prop = new types.SetProperty({ verbose_name: 'Regular Set Property' });
+			prop.should.not.have.property('encode');
+		});
+
+		it('Should not touch SetProperty WITH a $type but NOT simple:true flag set', function(){
+			var prop = new types.SetProperty({ verbose_name: 'Regular Set Property with Type', $type: RefObj.$type });
+			var output = prop.encode([RefObj]);
+			output[0].should.eql(JSON.stringify({ $type: RefObj.$type, $id: RefObj.$id }));
+		});
+
+		it('Should convert a SetProperty with $type and simple:true into a string, then decode it back into an object', function(){
+			var prop = new types.SetProperty({ verbose_name: 'SIMPLE Set Property with Type', $type: RefObj.$type, simple: true });
+			var output = prop.encode([RefObj]);
+			output[0].should.equal(RefObj.$id);
+			output = prop.decode(output);
+			output[0].should.eql({ $type: RefObj.$type, $id: RefObj.$id });
+		});
+
+	});
+
 
 });
 

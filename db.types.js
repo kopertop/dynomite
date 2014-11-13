@@ -181,11 +181,72 @@ util.inherits(DateTimeProperty, Property);
  * Set Property
  */
 function SetProperty(options){
-	Property.call(this, options);
+	var self = this;
+	Property.call(self, options);
 	if(options.type === Number || options.type === Boolean){
-		this.type_code = 'NS';
+		self.type_code = 'NS';
 	} else {
-		this.type_code = 'SS';
+		self.type_code = 'SS';
+	}
+	
+	// Allow Set properties to include References
+	if(options.$type){
+		/**
+		 * Order is important with encoding, so we
+		 * make sure we always do $type, then $id
+		 */
+		self.encode = function(val){
+			if(!val){
+				return val;
+			}
+
+			// Allow "Simple" reference properties
+			// which only encode to the ID string
+			var retVal = [];
+			if(self.options.simple){
+				val.forEach(function(x, $index){
+					if(typeof x === 'object'){
+						retVal.push(x.$id);
+					}
+				});
+			} else {
+				val.forEach(function(x, $index){
+					if(typeof x === 'object'){
+						retVal.push(JSON.stringify({
+							$type: x.$type,
+							$id: x.$id,
+						}));
+					}
+				});
+			}
+			return retVal;
+		};
+
+		/**
+		 * Allow for decoding of both Simple and Normal
+		 * Reference Properties
+		 */
+		self.decode = function decodeReferenceProperty(val){
+			if(!val){
+				return val;
+			}
+
+			// A "Simple" reference property
+			// only contains the ID of the object,
+			// not the full object type and ID JSON string
+			var retVal = [];
+			if(self.options.simple){
+				val.forEach(function(x, $index){
+					retVal.push({ $type: self.options.$type, $id: x });
+				});
+			} else {
+				val.forEach(function(x, $index){
+					retVal.push(JSON.parse(val));
+				});
+			}
+			return retVal;
+		};
+
 	}
 }
 util.inherits(SetProperty, Property);
