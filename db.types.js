@@ -256,15 +256,78 @@ util.inherits(SetProperty, Property);
  */
 var GROUP_SEPARATOR = '\x1d';
 function ListProperty(options){
-	Property.call(this, options);
-	this.type_code = 'L';
+	var self = this;
+	Property.call(self, options);
+	self.type_code = 'L';
+	// Allow Set properties to include References
+	if(options.$type){
+		/**
+		 * Order is important with encoding, so we
+		 * make sure we always do $type, then $id
+		 */
+		self.encode = function encodeListRefProp(val){
+			if(!val){
+				return val;
+			}
 
-	this.decode = function decodeList(val){
-		if(typeof val === 'string'){
-			val = val.split(GROUP_SEPARATOR);
-		}
-		return val;
-	};
+			// Allow "Simple" reference properties
+			// which only encode to the ID string
+			var retVal = [];
+			if(self.options.simple){
+				val.forEach(function(x, $index){
+					if(typeof x === 'object'){
+						retVal.push(x.$id);
+					}
+				});
+			} else {
+				val.forEach(function(x, $index){
+					if(typeof x === 'object'){
+						retVal.push(JSON.stringify({
+							$type: x.$type,
+							$id: x.$id,
+						}));
+					}
+				});
+			}
+			return retVal;
+		};
+
+		/**
+		 * Allow for decoding of both Simple and Normal
+		 * Reference Properties
+		 */
+		self.decode = function decodeListRefProp(val){
+			if(!val){
+				return val;
+			}
+			if(typeof val === 'string'){
+				val = val.split(GROUP_SEPARATOR);
+			}
+
+			// A "Simple" reference property
+			// only contains the ID of the object,
+			// not the full object type and ID JSON string
+			var retVal = [];
+			if(self.options.simple){
+				val.forEach(function(x, $index){
+					retVal.push({ $type: self.options.$type, $id: x });
+				});
+			} else {
+				val.forEach(function(x, $index){
+					retVal.push(JSON.parse(val));
+				});
+			}
+			return retVal;
+		};
+
+	} else {
+		self.decode = function decodeList(val){
+			if(typeof val === 'string'){
+				val = val.split(GROUP_SEPARATOR);
+			}
+			return val;
+		};
+	}
 
 }
 util.inherits(ListProperty, Property);
