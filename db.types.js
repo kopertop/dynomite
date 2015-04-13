@@ -418,3 +418,4 @@ exports.DateTimeProperty = DateTimeProperty;
 exports.SetProperty = SetProperty;
 exports.ListProperty = ListProperty;
 exports.FileProperty = FileProperty;
+exports.MapProperty = MapProperty;
