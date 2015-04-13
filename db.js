@@ -155,11 +155,24 @@ function convertValueToDynamo(val, type_code){
 			if(val === 'NaN'){
 				val = '0';
 			}
+		} else {
+			type_code = 'M';
 		}
 	}
-	// The default type code is String
+	// For Map Properties, we need to also convert every sub element
+	if(type_code === 'M' && typeof val === 'object'){
+		_.forEach(val, function(v, k){
+			val[k] = convertValueToDynamo(v);
+		});
+	}
+
 	if(type_code === undefined){
-		type_code = 'S';
+		if(typeof val === 'boolean'){
+			type_code = 'BOOL';
+		} else {
+			// The default type code is String
+			type_code = 'S';
+		}
 	}
 	// This allows us to pass "null", (different from undefined) to explicitly
 	// exclude returning the format { type_code: val }

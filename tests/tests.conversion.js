@@ -4,6 +4,7 @@
 'use strict';
 
 var should = require('should');
+var _ = require('lodash');
 
 describe('convertValueToDynamo', function(){
 	var db = require('../db');
@@ -39,4 +40,35 @@ describe('convertValueToDynamo', function(){
 			result.SS.should.containEql(v);
 		});
 	});
+
+	it('Should convert a complex MapProperty', function(){
+		var values = {
+			technical_contact: {
+				name: 'Chris Moyer',
+				email: 'cmoyer@aci.info',
+			},
+			bool_thing: true,
+			number_thing: 5,
+			list_thing: [ '1', 'a', 'f', 'Something'],
+		};
+		var result = db.convertValueToDynamo(values, 'M');
+		console.log(result);
+		result.should.have.property('M');
+		_.forEach(values, function(v, k){
+			result.M.should.have.property(k);
+			var val = result.M[k];
+			// Make sure every value is a structure
+			if(k === 'technical_contact'){
+				val.should.have.property('M');
+			} else if (k === 'bool_thing'){
+				val.should.have.property('B');
+			} else if (k === 'number_thing'){
+				val.should.have.property('N');
+			} else if (k === 'list_thing'){
+				val.should.have.property('L');
+			}
+
+		});
+	});
+
 });
