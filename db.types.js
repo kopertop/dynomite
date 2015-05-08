@@ -91,7 +91,13 @@ function JSONProperty(options){
 	Property.call(this, options);
 
 	this.encode = JSON.stringify;
-	this.decode = JSON.parse;
+	this.decode = function(val){
+		if(typeof val === 'string'){
+			return JSON.parse(val);
+		} else {
+			return val;
+		}
+	};
 }
 util.inherits(JSONProperty, Property);
 
