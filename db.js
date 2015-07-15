@@ -259,12 +259,21 @@ function save(obj, callback, expected){
 
 	// Save using updateItem, this prevents us from clobbering properties
 	// we don't know about
-	dynamodb.updateItem(args, function(err, data){
+	dynamodb.updateItem(args, function onUpdateItem(err, data){
 		if(err){
-			console.error(err, data);
-			console.log('ERROR WITH', args);
-		}
-		if(callback){
+			if(err.code === 'ProvisionedThroughputExceededException'){
+				console.error('ERROR: Provisioned Throughput Exceeded for table:', args.TableName);
+			} else {
+				console.error('UNKNOWN ERROR', err, 'WITH', args);
+			}
+			// Allow retrying an error
+			if(err.retryable){
+				dynamodb.updateItem(args, onUpdateItem);
+			} else if (callback) {
+				callback(err, data);
+			}
+
+		} else if(callback){
 			callback(err, data);
 		}
 	});
