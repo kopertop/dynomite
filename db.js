@@ -333,7 +333,9 @@ function listIterator(model, callback, err, data, opts, continue_function){
 					continue_function(model, opts, callback);
 				}, 1000);
 			} else {
-				callback(null, null, data.LastEvaluatedKey);
+				callback(null, null, data.LastEvaluatedKey, function(){
+					continue_function(model, opts, callback);
+				});
 			}
 		} else {
 			callback(null, null, data.LastEvaluatedKey);
