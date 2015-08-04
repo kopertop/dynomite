@@ -14,8 +14,8 @@
 // Get the local machine ID, for which we just use 
 // the IP address, containing the last two octets
 var machine_id = null;
-var os = require('os');
-var ifaces = os.networkInterfaces();
+var ifaces = null;
+
 // Convert a string integer into a hex value, padded
 // to two characters
 function toHex(val){
@@ -24,17 +24,32 @@ function toHex(val){
 }
 function checkForPrimaryInterface(details){
 	if(!machine_id){
-		if (details.family=='IPv4' && details.address != '127.0.0.1') {
+		if (details.family === 'IPv4' && details.address !== '127.0.0.1') {
 			machine_id = details.address.split('.');
 			machine_id = toHex(machine_id[2]) + toHex(machine_id[3]);
 		}
 	}
 }
-for (var ifaceName in ifaces){
-	ifaces[ifaceName].forEach(checkForPrimaryInterface);
-	if(machine_id){
-		break;
+function getRandom(){
+	var randInt = Math.floor(Math.random() * 255);
+	return toHex(randInt);
+}
+
+// On lambda, you can't access the OS
+try {
+	var os = require('os');
+	ifaces = os.networkInterfaces();
+	for (var ifaceName in ifaces){
+		ifaces[ifaceName].forEach(checkForPrimaryInterface);
+		if(machine_id){
+			break;
+		}
 	}
+	if(machine_id === null){
+		machine_id = getRandom();
+	}
+} catch (e) {
+	machine_id = getRandom();
 }
 
 // The Sequence ID is just the process ID (PID)
