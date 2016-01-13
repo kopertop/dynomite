@@ -247,7 +247,7 @@ function SetProperty(options){
 				});
 			} else {
 				val.forEach(function(x, $index){
-					retVal.push(JSON.parse(val));
+					retVal.push(JSON.parse(x));
 				});
 			}
 			return retVal;
@@ -320,7 +320,7 @@ function ListProperty(options){
 				});
 			} else {
 				val.forEach(function(x, $index){
-					retVal.push(JSON.parse(val));
+					retVal.push(JSON.parse(x));
 				});
 			}
 			return retVal;
