@@ -7,7 +7,17 @@
 
 var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
-var dynamodb = new AWS.DynamoDB();
+var https = require('https');
+var dynamodb = new AWS.DynamoDB({
+	region: 'us-east-1',
+	httpOptions: {
+		agent: new https.Agent({
+			rejectUnauthorized: true,
+			keepAlive: true,
+		}),
+	},
+	maxRetries: 3,
+});
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 var _ = require('lodash');
