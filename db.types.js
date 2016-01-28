@@ -266,7 +266,7 @@ function ListProperty(options){
 	Property.call(self, options);
 	self.type_code = 'L';
 	// Allow Set properties to include References
-	if(options.$type){
+	if(options && options.$type){
 		/**
 		 * Order is important with encoding, so we
 		 * make sure we always do $type, then $id
