@@ -7,7 +7,17 @@
 
 var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
-var dynamodb = new AWS.DynamoDB();
+var https = require('https');
+var dynamodb = new AWS.DynamoDB({
+	region: 'us-east-1',
+	httpOptions: {
+		agent: new https.Agent({
+			rejectUnauthorized: true,
+			keepAlive: true,
+		}),
+	},
+	maxRetries: 3,
+});
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 var _ = require('lodash');
@@ -332,10 +342,13 @@ function listIterator(model, callback, err, data, opts, continue_function){
 				setTimeout(function(){
 					continue_function(model, opts, callback);
 				}, 1000);
-			} else {
+			} else if(data.LastEvaluatedKey) {
 				callback(null, null, data.LastEvaluatedKey, function(){
+					opts.ExclusiveStartKey = data.LastEvaluatedKey;
 					continue_function(model, opts, callback);
 				});
+			} else {
+				callback(null, null);
 			}
 		} else {
 			callback(null, null, data.LastEvaluatedKey);

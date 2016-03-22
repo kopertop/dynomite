@@ -247,7 +247,7 @@ function SetProperty(options){
 				});
 			} else {
 				val.forEach(function(x, $index){
-					retVal.push(JSON.parse(val));
+					retVal.push(JSON.parse(x));
 				});
 			}
 			return retVal;
@@ -266,7 +266,7 @@ function ListProperty(options){
 	Property.call(self, options);
 	self.type_code = 'L';
 	// Allow Set properties to include References
-	if(options.$type){
+	if(options && options.$type){
 		/**
 		 * Order is important with encoding, so we
 		 * make sure we always do $type, then $id
@@ -320,7 +320,7 @@ function ListProperty(options){
 				});
 			} else {
 				val.forEach(function(x, $index){
-					retVal.push(JSON.parse(val));
+					retVal.push(JSON.parse(x));
 				});
 			}
 			return retVal;

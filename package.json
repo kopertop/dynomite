@@ -2,7 +2,7 @@
   "author": "Chris Moyer <cmoyer@newstex.com>",
   "name": "dynomite",
   "description": "Simple ORM for AWS DynamoDB",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "main": "db.js",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
     "test": "mocha tests"
   },
   "dependencies": {
-    "aws-sdk": "^2.1.27",
+    "aws-sdk": "^2.2.32",
     "grunt": "*",
     "grunt-contrib-jshint": "*",
     "grunt-mocha-istanbul": "*",
