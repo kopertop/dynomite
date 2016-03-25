@@ -174,26 +174,31 @@ DocumentConnection.prototype.clear = function (){
  * @param callback: A callback function to call when the operation is completed
  */
 DocumentConnection.prototype.commit = function (callback){
-	var sdf = JSON.stringify(this.batch);
 	var self = this;
 
-	var options = {
-		host: this.endpoint,
-		path: '/' + this.version + '/documents/batch',
-		headers: {
-			'Content-Type': 'application/json',
-			'Content-Length': Buffer.byteLength(sdf)
-		},
-		method: 'POST'
-	};
-	var req = request(options, function(data){
-		self.clear();
-		if(callback){
-			callback(data);
-		}
-	}, this.endpoint);
-	req.write(sdf);
-	req.end();
+	if (this.batch && this.batch.length > 0) {
+		var sdf = JSON.stringify(this.batch);
+
+		var options = {
+			host: this.endpoint,
+			path: '/' + this.version + '/documents/batch',
+			headers: {
+				'Content-Type': 'application/json',
+				'Content-Length': Buffer.byteLength(sdf)
+			},
+			method: 'POST'
+		};
+		var req = request(options, function(data){
+			self.clear();
+			if(callback){
+				callback(data);
+			}
+		}, this.endpoint);
+		req.write(sdf);
+		req.end();
+	} else if (callback) {
+		callback({ msg: 'Nothing to upload' });
+	}
 	return self;
 };
 
