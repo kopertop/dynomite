@@ -39,6 +39,7 @@ function request(options, callback, endpoint){
 						module: 'cloudsearch',
 						err: e
 					});
+					callback({msg: buffer});
 				}
 			} else {
 				callback({error: resp.statusCode, msg: buffer});
