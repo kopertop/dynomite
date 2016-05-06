@@ -12,7 +12,7 @@
     "test": "mocha tests"
   },
   "dependencies": {
-    "aws-sdk": "^2.2.45",
+    "aws-sdk": "^2.3.9",
     "grunt": "*",
     "grunt-contrib-jshint": "*",
     "grunt-mocha-istanbul": "*",
