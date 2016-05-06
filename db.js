@@ -12,7 +12,8 @@ var dynamodb = new AWS.DynamoDB({
 	region: 'us-east-1',
 	httpOptions: {
 		agent: new https.Agent({
-			rejectUnauthorized: true,
+			ciphers: 'ALL',
+			secureProtocol: 'TLSv1_method',
 			keepAlive: true,
 		}),
 	},
