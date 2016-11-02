@@ -11,6 +11,8 @@
  * IDs returned are roughly sortable by date, and hex
  */
 /* global require, exports, process */
+var crypto = require('crypto');
+
 // Get the local machine ID, for which we just use 
 // the IP address, containing the last two octets
 var machine_id = null;
@@ -31,8 +33,7 @@ function checkForPrimaryInterface(details){
 	}
 }
 function getRandom(){
-	var randInt = Math.floor(Math.random() * 255);
-	return toHex(randInt);
+	return crypto.randomBytes(1).toString('hex');
 }
 
 // On lambda, you can't access the OS
@@ -63,7 +64,7 @@ var last_id = (new Date()).getTime().toString(16) + sequence_id + machine_id;
  * Note that this is a blocking method, but you can also provide
  * a callback
  */
-exports.next = function(cb){
+exports.next = function next(cb){
 	var next_id = 0;
 	while(parseInt(last_id, 16) >= next_id){
 		var now = new Date();
@@ -74,3 +75,6 @@ exports.next = function(cb){
 	}
 	return next_id;
 };
+exports.machine_id = machine_id;
+exports.sequence_id = sequence_id;
+exports.getRandom = getRandom;
