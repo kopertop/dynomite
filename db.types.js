@@ -76,8 +76,10 @@ function ReferenceProperty(options){
 		// not the full object type and ID JSON string
 		if(this.options.simple){
 			return { $type: this.options.$type, $id: val };
-		} else {
+		} else if(_.isString(val)) {
 			return JSON.parse(val);
+		} else {
+			return val;
 		}
 	};
 }
