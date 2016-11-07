@@ -5,6 +5,7 @@
  */
 'use strict';
 
+var _ = require('lodash');
 var util = require('util');
 var moment = require('moment');
 var AWS = require('aws-sdk');
