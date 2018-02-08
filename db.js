@@ -547,8 +547,9 @@ function define(options){
 	 *		user
 	 *		comment
 	 *		transaction_id
+	 * @param skip_history: Optional, boolean, if set to true, ignore history tracking for this save
 	 */
-	Cls.prototype.save = function(callback, expected, log){
+	Cls.prototype.save = function(callback, expected, log, skip_history){
 		var self = this;
 
 		if(!log){
@@ -569,7 +570,7 @@ function define(options){
 			self.emit('onSave');
 			return save(self, function(err, data){
 				// Allow History Tracking
-				if( Cls.$options.track_history ){
+				if( Cls.$options.track_history && !skip_history ){
 					// This parameter Mapping is REQUIRED to make history tracking work
 					if(Cls.$type){
 						self.$type = Cls.$type;
@@ -650,8 +651,9 @@ function define(options){
 	 * @param props: An object mapping of property_name: value to set, or "null" to remove
 	 * @param callback: An optional function to call back with the results
 	 * @param log: An optional set of log parameters to send
+	 * @param skip_history: Optional, boolean value, if true, skip history tracking for this operation
 	 */
-	Cls.prototype.set = function objAdd(props, callback, log){
+	Cls.prototype.set = function objAdd(props, callback, log, skip_history){
 		var self = this;
 		var AttributeUpdates = {};
 
@@ -724,7 +726,7 @@ function define(options){
 			});
 
 			// Allow History Tracking
-			if( Cls.$options.track_history ){
+			if( Cls.$options.track_history && !skip_history ){
 
 				// This parameter Mapping is REQUIRED to make history tracking work
 				if(Cls.$type){
