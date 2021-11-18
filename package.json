@@ -12,10 +12,7 @@
     "test": "mocha tests"
   },
   "dependencies": {
-    "aws-sdk": "^2.6.13",
-    "grunt": "*",
-    "grunt-contrib-jshint": "*",
-    "grunt-mocha-istanbul": "*",
+    "aws-sdk": "^2.1032.0",
     "lodash": "^4.16.6",
     "moment": "^2.8.3",
     "node-uuid": "*",
