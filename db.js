@@ -273,7 +273,7 @@ function save(obj, callback, expected){
 	dynamodb.updateItem(args, function(err, data){
 		if(err){
 			console.error(err, data);
-			console.log('ERROR WITH', args);
+			console.log('ERROR WITH', JSON.stringify(args));
 		}
 		if(callback){
 			callback(err, data);

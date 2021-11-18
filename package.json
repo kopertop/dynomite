@@ -2,7 +2,7 @@
 	"author": "Chris Moyer <cmoyer@newstex.com>",
 	"name": "dynomite",
 	"description": "Simple ORM for AWS DynamoDB",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"main": "db.js",
 	"repository": {
 		"type": "git",
@@ -16,7 +16,8 @@
 		"release:release": "git stash && git flow release start $npm_package_version && git stash pop",
 		"release:commit": "git add package.json package-lock.json && git commit -m \"Bumped to $npm_package_version\" --no-verify",
 		"release:finish": "GIT_MERGE_AUTOEDIT=no git flow release finish -m Release $npm_package_version",
-		"release:push": "git push origin master develop && git push --tags"
+		"release:push": "git push origin master develop && git push --tags",
+		"release:publish": "git checkout master && npm publish && git checkout develop"
 	},
 	"dependencies": {
 		"aws-sdk": "^2.1032.0",
