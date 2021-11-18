@@ -601,7 +601,7 @@ function define(options){
 					hist.save();
 				}
 				// Trigger any "afterSave" events
-				self.emit('afterSave');
+				self.emit('afterSave', err, data, log);
 
 				if(callback){
 					callback(err, data);
@@ -762,7 +762,7 @@ function define(options){
 				if(callback){
 					callback(err, data);
 				}
-				self.emit('afterUpdate', err, data);
+				self.emit('afterUpdate', err, data, log);
 			});
 
 		}
@@ -775,11 +775,7 @@ function define(options){
 		} else {
 			doUpdateOperation();
 		}
-
-
 	};
-
-
 
 	Cls.prototype.getID = function(){
 		if(Cls._rangeKeyName){
