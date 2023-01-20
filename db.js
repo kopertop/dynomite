@@ -5,23 +5,13 @@
  */
 'use strict';
 
-var AWS = require('aws-sdk');
-AWS.config.update({region: 'us-east-1'});
-var https = require('https');
-var dynamodb = new AWS.DynamoDB({
-	region: 'us-east-1',
-	httpOptions: {
-		agent: new https.Agent({
-			ciphers: 'ALL',
-			secureProtocol: 'TLSv1_method',
-			keepAlive: true,
-		}),
-	},
+const AWS = require('aws-sdk');
+const dynamodb = new AWS.DynamoDB({
 	maxRetries: 3,
 });
-var EventEmitter = require('events').EventEmitter;
-var util = require('util');
-var _ = require('lodash');
+const EventEmitter = require('events').EventEmitter;
+const util = require('util');
+const _ = require('lodash');
 
 /**
  * Delayed function call
@@ -45,7 +35,7 @@ function delayFunction(fnc, callback, opts){
  * Dynamize the hashKey and rangeKey ID
  */
 function dynamizeKey(model, id){
-	var key = {};
+	const key = {};
 	if(typeof id === 'string'){
 		key[model._hashKeyName] = {};
 		key[model._hashKeyName][model._hashKeyType] =  id;
@@ -73,12 +63,12 @@ function dynamizeKey(model, id){
  * @param opts: Optional options to pass through to DynamoDB.getItem
  */
 function lookup(model, id, callback, opts){
-	var args = {
+	const args = {
 		TableName: model._table_name,
 		Key: dynamizeKey(model, id)
 	};
 	if(opts){
-		for(var x in opts){
+		for(let x in opts){
 			args[x] = opts[x];
 		}
 	}
@@ -104,12 +94,12 @@ function lookup(model, id, callback, opts){
  * @param opts: Optional options to pass through to DynamoDB.batchGetItem
  */
 function batchLookup(model, ids, callback, opts){
-	var keys = [];
-	for(var x in ids){
-		var id = ids[x];
+	const keys = [];
+	for(let x in ids){
+		const id = ids[x];
 		keys.push(dynamizeKey(model, id));
 	}
-	var args = { RequestItems: { } };
+	const args = { RequestItems: { } };
 	args.RequestItems[model._table_name] = { Keys: keys };
 
 	dynamodb.batchGetItem(args, function(err, data){
@@ -117,9 +107,9 @@ function batchLookup(model, ids, callback, opts){
 			console.error(err);
 			callback(null, err);
 		} else {
-			var items = [];
-			for(var x in data.Responses[model._table_name]){
-				var item = data.Responses[model._table_name][x];
+			const items = [];
+			for(let x in data.Responses[model._table_name]){
+				const item = data.Responses[model._table_name][x];
 				items.push(model.from_dynamo(item));
 			}
 			callback(items);
@@ -142,7 +132,7 @@ function convertValueToDynamo(val, type_code){
 			type_code = 'L';
 		}
 		// Convert each item in the list to the type of value it is
-		var vals = [];
+		const vals = [];
 		val.forEach(function(v, $index){
 			// Lists could be either the 'L' type, or a Set type
 			if(type_code && type_code.length === 2 && type_code[1] === 'S'){
@@ -188,9 +178,7 @@ function convertValueToDynamo(val, type_code){
 	// This allows us to pass "null", (different from undefined) to explicitly
 	// exclude returning the format { type_code: val }
 	if(type_code !== null){
-		var ret = {};
-		ret[type_code] = val;
-		return ret;
+		return { [type_code]: val };
 	} else {
 		return val;
 	}
@@ -205,23 +193,23 @@ function convertValueToDynamo(val, type_code){
  * 	All the conditions must be met for the operation to succeed
  */
 function save(obj, callback, expected){
-	var table_name = obj.constructor._table_name;
-	var properties = obj.constructor._properties;
+	const table_name = obj.constructor._table_name;
+	const properties = obj.constructor._properties;
 	
 	// Create the Object Value mapping
-	var obj_values = { };
+	const obj_values = { };
 	//obj_values[obj.constructor._hashKeyName] = {};
 	//obj_values[obj.constructor._hashKeyName][obj.constructor._hashKeyType] = obj[obj.constructor._hashKeyName];
-	var ignored_props = [
+	const ignored_props = [
 		obj.constructor._hashKeyName,
 	];
 	if(obj.constructor._rangeKeyName){
 		ignored_props.push(obj.constructor._rangeKeyName);
 	}
-	for (var prop_name in properties){
+	for (let prop_name in properties){
 		if(ignored_props.indexOf(prop_name) < 0){
-			var prop_type = properties[prop_name].type_code;
-			var prop_val = obj[prop_name];
+			const prop_type = properties[prop_name].type_code;
+			const prop_val = obj[prop_name];
 
 			// Validate
 			properties[prop_name].validate(prop_val);
@@ -259,7 +247,7 @@ function save(obj, callback, expected){
 	}
 
 
-	var args = {
+	const args = {
 		Key: dynamizeKey(obj.constructor, obj.getID()),
 		TableName: table_name,
 		AttributeUpdates: obj_values,
@@ -291,7 +279,7 @@ function save(obj, callback, expected){
  * @param expected: Optional "Expected" to send
  */
 function updateItem(obj, updates, callback, expected){
-	var args = {
+	const args = {
 		TableName: obj.constructor._table_name,
 		Key: dynamizeKey(obj.constructor, obj.getID()),
 		AttributeUpdates: updates,
@@ -310,7 +298,7 @@ function updateItem(obj, updates, callback, expected){
  * @param callback: An optional callback to call when the operation succeeds, or fails
  */
 function remove(obj, callback){
-	var params = {
+	const params = {
 		TableName: obj.constructor._table_name,
 		Key: dynamizeKey(obj.constructor, obj.getID())
 	};
@@ -369,12 +357,12 @@ function query(model, opts, callback){
 	if(opts.match){
 		opts.KeyConditions = {};
 		Object.keys(opts.match).forEach(function(prop_name){
-			var prop = model._properties[prop_name];
-			var val = opts.match[prop_name];
+			const prop = model._properties[prop_name];
+			const val = opts.match[prop_name];
 			if(typeof val === 'object'){
-				var attr_vals = [];
+				const attr_vals = [];
 				val.forEach(function(v){
-					var attr_val = {};
+					const attr_val = {};
 					attr_val[prop.type_code] = v;
 					attr_vals.push(attr_val);
 				});
@@ -383,7 +371,7 @@ function query(model, opts, callback){
 					ComparisonOperator: 'IN'
 				};
 			} else {
-				var attr_value = {};
+				const attr_value = {};
 				attr_value[prop.type_code] = val;
 				opts.KeyConditions[prop_name] = {
 					AttributeValueList: [attr_value],
@@ -407,7 +395,7 @@ function query(model, opts, callback){
 function scan(model, opts, callback){
 	opts.TableName = model._table_name;
 	// Cheap way to make a copy
-	var scanOpts = JSON.parse(JSON.stringify(opts));
+	const scanOpts = JSON.parse(JSON.stringify(opts));
 	if(opts.PageLimit){
 		scanOpts.Limit = opts.PageLimit;
 		delete scanOpts.PageLimit;
@@ -422,11 +410,11 @@ function scan(model, opts, callback){
  * Decode a dynamo Property
  */
 function decodeDynamoProperty(prop_val, prop_name, Cls){
-	var ret_value = null;
+	let ret_value = null;
 	_.forOwn(prop_val, function(val, prop_type){
 		// Check what we expected
-		var expected_prop = Cls._properties[prop_name];
-		var expected_type = null;
+		let expected_prop = Cls._properties[prop_name];
+		let expected_type = null;
 		if(expected_prop){
 			expected_type = expected_prop.type_code;
 		}
@@ -441,7 +429,7 @@ function decodeDynamoProperty(prop_val, prop_name, Cls){
 		} else if (expected_type === 'SS' && prop_type === 'S'){
 			val = [val];
 		} else if (prop_type === 'L'){
-			var listValue = [];
+			const listValue = [];
 			val.forEach(function(v){
 				// We intentionally do NOT want to send the prop_name here, because
 				// we don't want the decode function to be called on every sub-value
@@ -479,9 +467,9 @@ function decodeDynamoProperty(prop_val, prop_name, Cls){
  * @param properties: A dictionary of property names and definitions
  */
 function define(options){
-	var History = require('./resources/history').History;
+	const History = require('./resources/history').History;
 	
-	var Cls = function(hashKey, rangeKey){
+	const Cls = function(hashKey, rangeKey){
 		this[Cls._hashKeyName] = hashKey;
 		if(typeof rangeKey !== 'undefined'){
 			this[Cls._rangeKeyName] = rangeKey;
@@ -550,7 +538,7 @@ function define(options){
 	 * @param skip_history: Optional, boolean, if set to true, ignore history tracking for this save
 	 */
 	Cls.prototype.save = function(callback, expected, log, skip_history){
-		var self = this;
+		const self = this;
 
 		if(!log){
 			log = {};
@@ -583,7 +571,7 @@ function define(options){
 					}
 
 					// New objects wouldn't yet have a $hist object
-					var hist = self.$hist;
+					const hist = self.$hist;
 					if(!hist){
 						hist = new History();
 					}
@@ -630,11 +618,11 @@ function define(options){
 	 * @param callback: An optional function to call back with the results
 	 */
 	Cls.prototype.add = function objAdd(props, callback){
-		var self = this;
-		var AttributeUpdates = {};
+		const self = this;
+		const AttributeUpdates = {};
 		Object.keys(props).forEach(function(prop_name){
 			if(Cls._properties[prop_name]){
-				var val = props[prop_name];
+				const val = props[prop_name];
 				AttributeUpdates[prop_name] = {
 					Action: 'ADD',
 					Value: convertValueToDynamo(val, Cls._properties[prop_name].type_code),
@@ -654,8 +642,8 @@ function define(options){
 	 * @param skip_history: Optional, boolean value, if true, skip history tracking for this operation
 	 */
 	Cls.prototype.set = function objAdd(props, callback, log, skip_history){
-		var self = this;
-		var AttributeUpdates = {};
+		const self = this;
+		const AttributeUpdates = {};
 
 		function doUpdateOperation(){
 			self.emit('onUpdate', props);
@@ -675,10 +663,10 @@ function define(options){
 
 			// Handle any Auto-Properties
 			Object.keys(Cls._properties).forEach(function(prop_name){
-				var prop = Cls._properties[prop_name];
+				const prop = Cls._properties[prop_name];
 				// Automatic properties should still be updated
 				if(prop.options && prop.options.auto_now){
-					var val = new Date();
+					let val = new Date();
 
 					// Update the original object so the history gets updated properly
 					self[prop_name] = val;
@@ -694,9 +682,9 @@ function define(options){
 
 
 			Object.keys(props).forEach(function(prop_name){
-				var prop = Cls._properties[prop_name];
+				const prop = Cls._properties[prop_name];
 				if(prop){
-					var val = props[prop_name];
+					let val = props[prop_name];
 					self[prop_name] = val;
 
 					if(val === null){
@@ -740,7 +728,7 @@ function define(options){
 				}
 
 				// New objects wouldn't yet have a $hist object
-				var hist = self.$hist;
+				const hist = self.$hist;
 				if(!hist){
 					hist = new History();
 				}
@@ -789,13 +777,13 @@ function define(options){
 	 * Get a simplified version, for saving to CloudSearch
 	 */
 	Cls.prototype.getSimplified = function getSimplified(){
-		var self = this;
-		var ret = {};
+		const self = this;
+		const ret = {};
 		Object.keys(Cls._properties).forEach(function(prop_name){
-			var prop = Cls._properties[prop_name];
+			const prop = Cls._properties[prop_name];
 			// Ignore any hidden properties
 			if (!(prop && prop.options && prop.options.hidden === true)){
-				var val = self[prop_name];
+				let val = self[prop_name];
 				// Make sure the value is not empty, but allow 0
 				if(val !== undefined && val !== null && val !== ''){
 					// Allow the custom encode function to be fired here
@@ -814,7 +802,7 @@ function define(options){
 	 * Lookup the History for this object
 	 */
 	Cls.prototype.getHistory = function getHistory(callback, opts){
-		var id_string = JSON.stringify({ $type: this.$type, $id: this.$id, });
+		const id_string = JSON.stringify({ $type: this.$type, $id: this.$id, });
 		if(opts === undefined || opts === null){
 			opts = {};
 		}
@@ -831,10 +819,9 @@ function define(options){
 	 * @param callback: The function to call with the "Blame" object
 	 */
 	Cls.prototype.blame = function blame(callback){
-		var self = this;
-		var id_string = JSON.stringify({ $type: self.$type, $id: self.$id, });
+		const self = this;
 		// Initialize the parameter history log
-		var params = {};
+		const params = {};
 		Object.keys(Cls._properties).forEach(function(prop_name){
 			// Ignore any hidden properties
 			if(prop_name[0] !== '_'){
@@ -914,13 +901,13 @@ function define(options){
 						callback(err, null);
 					}
 				} else {
-					var batch = [];
+					const batch = [];
 					if(data.Count > 0){
 						data.Items.forEach(function(item){
 							batch.push(Cls.from_dynamo(item));
 						});
 					}
-					var next = null;
+					let next = null;
 					if(data.LastEvaluatedKey){
 						opts.ExclusiveStartKey = data.LastEvaluatedKey;
 						next = delayFunction(Cls.scan, callback, opts);
@@ -935,13 +922,13 @@ function define(options){
 	 * Return this object type from a DynamoDB Item
 	 */
 	Cls.from_dynamo = function(item){
-		var obj = new Cls();
+		const obj = new Cls();
 		if(Cls.$type){
 			obj.$type = Cls.$type;
 		}
 
-		for (var prop_name in item){
-			var prop_val = item[prop_name];
+		for (let prop_name in item){
+			const prop_val = item[prop_name];
 			// Converts the Dynamo Types into simple JSON types
 			obj[prop_name] = decodeDynamoProperty(prop_val, prop_name, Cls);
 		}
