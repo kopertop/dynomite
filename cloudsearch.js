@@ -5,8 +5,8 @@
  * @author Chris Moyer <cmoyer@newstex.com>
  */
 /* global require, exports, process, Buffer */
-var http = require('http');
-var querystring = require('querystring');
+const http = require('http');
+const querystring = require('querystring');
 
 /**
  * Generic request function that handles proxies
@@ -15,7 +15,7 @@ function request(options, callback, endpoint){
 
 	// Proxy Support
 	if(process.env.http_proxy){
-		var proxy = process.env.http_proxy.split('/')[2].split(':');
+		let proxy = process.env.http_proxy.split('/')[2].split(':');
 		options.host = proxy[0];
 		options.port = parseInt(proxy[1], 10);
 		options.path = 'http://' + endpoint + options.path;
@@ -26,7 +26,7 @@ function request(options, callback, endpoint){
 	}
 
 	return http.request(options, function(resp){
-		var buffer = '';
+		let buffer = '';
 		resp.on('data', function(chunk){
 			buffer += chunk;
 		});
@@ -53,7 +53,7 @@ function request(options, callback, endpoint){
  * CloudSearch SearchConnection
  * Usage:
  *
- * 	var conn = new SearchConnection({
+ * 	let conn = new SearchConnection({
  * 		endpoint: 'search-domain.us-east-1.cloudsearch.amazonaws.com'
  * 	})
  * 	conn.search({ 
@@ -76,16 +76,16 @@ function SearchConnection(args){
 SearchConnection.prototype.search = function (args, callback){
 	// CloudSearch doesn't support multiple arguments in a REST style format,
 	// but instead wants them joined with commas, so we simplify them.
-	var simplified_args = {};
+	let simplified_args = {};
 	Object.keys(args).forEach(function(key){
-		var value = args[key];
+		let value = args[key];
 		if(typeof value == 'object'){
 			simplified_args[key] = value.join(',');
 		} else {
 			simplified_args[key] = value;
 		}
 	});
-	var options = {
+	let options = {
 		host: this.endpoint,
 		path: '/' + this.version + '/search?' + querystring.stringify(simplified_args)
 	};
@@ -99,7 +99,7 @@ exports.SearchConnection = SearchConnection;
  * DocumentConnection - Used to add new documents to a CloudSearch Index
  *
  * Usage:
- * 	var conn = new DocumentConnection({
+ * 	let conn = new DocumentConnection({
  * 		endpoint: 'document-domain.us-east-1.cloudsearch.amazonaws.com'
  * 	})
  * 	conn.add({
@@ -175,12 +175,12 @@ DocumentConnection.prototype.clear = function (){
  * @param callback: A callback function to call when the operation is completed
  */
 DocumentConnection.prototype.commit = function (callback){
-	var self = this;
+	let self = this;
 
 	if (this.batch && this.batch.length > 0) {
-		var sdf = JSON.stringify(this.batch);
+		let sdf = JSON.stringify(this.batch);
 
-		var options = {
+		let options = {
 			host: this.endpoint,
 			path: '/' + this.version + '/documents/batch',
 			headers: {
@@ -189,7 +189,7 @@ DocumentConnection.prototype.commit = function (callback){
 			},
 			method: 'POST'
 		};
-		var req = request(options, function(data){
+		let req = request(options, function(data){
 			self.clear();
 			if(callback){
 				callback(data);

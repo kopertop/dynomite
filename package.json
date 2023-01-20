@@ -2,7 +2,7 @@
 	"author": "Chris Moyer <cmoyer@newstex.com>",
 	"name": "dynomite",
 	"description": "Simple ORM for AWS DynamoDB",
-	"version": "1.0.1",
+	"version": "2.0.0",
 	"main": "db.js",
 	"repository": {
 		"type": "git",
@@ -20,7 +20,7 @@
 		"release:publish": "git checkout master && npm publish && git checkout develop"
 	},
 	"dependencies": {
-		"aws-sdk": "^2.1032.0",
+		"aws-sdk": "^2.1299.0",
 		"lodash": "^4.16.6",
 		"moment": "^2.8.3",
 		"node-uuid": "*",

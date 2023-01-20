@@ -7,9 +7,9 @@
  * @author: Chris Moyer <cmoyer@newstex.com>
  */
 /* global require, module */
-var db = require('../db.js');
+const db = require('../db.js');
 
-var UID = db.define({
+const UID = db.define({
 	tableName: 'UID',
 	key: ['$type', '$id'],
 	properties: {
@@ -38,7 +38,7 @@ var UID = db.define({
  * @param callback: The callback to return
  * @param properties: The list of properties to save to the UID object
  */
-var BACKOFF = 500;
+let BACKOFF = 500;
 UID.next = function(type, callback, properties){
 	// Make sure we have a type and callback
 	if(!type || !callback){
@@ -71,10 +71,10 @@ UID.next = function(type, callback, properties){
 					last_obj = new UID(type, 0);
 				}
 				// Increment by one, and try a conditional save
-				var next_id = last_obj.__id__ + 1;
-				var obj = new UID(type, next_id);
+				let next_id = last_obj.__id__ + 1;
+				let obj = new UID(type, next_id);
 				// Add all the properties
-				for (var prop_name in properties){
+				for (let prop_name in properties){
 					obj[prop_name] = properties[prop_name];
 				}
 				obj.save(function(err, data){

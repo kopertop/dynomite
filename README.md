@@ -16,7 +16,7 @@ Usage
 
 Defining your own objects is simple:
 
-	var Test = db.define({
+	const Test = db.define({
 		tableName: 'Test',
 		key: '__id__',
 		properties: {
@@ -31,7 +31,7 @@ Defining your own objects is simple:
 
 Once you have an object, you can create new instances of it, and save it:
 
-	var obj = new Test('foo');
+	const obj = new Test('foo');
 	obj.name = 'My Object Name';
 	obj.numeric = 10;
 	obj.stringSet = ['foo', 'bar', 'biz'];

@@ -11,12 +11,12 @@
  * IDs returned are roughly sortable by date, and hex
  */
 /* global require, exports, process */
-var crypto = require('crypto');
+const crypto = require('crypto');
 
 // Get the local machine ID, for which we just use 
 // the IP address, containing the last two octets
-var machine_id = null;
-var ifaces = null;
+let machine_id = null;
+let ifaces = null;
 
 // Convert a string integer into a hex value, padded
 // to two characters
@@ -38,9 +38,9 @@ function getRandom(){
 
 // On lambda, you can't access the OS
 try {
-	var os = require('os');
+	const os = require('os');
 	ifaces = os.networkInterfaces();
-	for (var ifaceName in ifaces){
+	for (let ifaceName in ifaces){
 		ifaces[ifaceName].forEach(checkForPrimaryInterface);
 		if(machine_id){
 			break;
@@ -55,9 +55,9 @@ try {
 
 // The Sequence ID is just the process ID (PID)
 // We allow 4 octets for storage here as well
-var sequence_id = toHex(process.pid/256) + toHex(process.pid%256);
+let sequence_id = toHex(process.pid/256) + toHex(process.pid%256);
 // Initialize the "last_id" to the value it would be right now
-var last_id = (new Date()).getTime().toString(16) + sequence_id + machine_id;
+let last_id = (new Date()).getTime().toString(16) + sequence_id + machine_id;
 
 /**
  * Return the next ID in a sequence
@@ -65,9 +65,9 @@ var last_id = (new Date()).getTime().toString(16) + sequence_id + machine_id;
  * a callback
  */
 exports.next = function next(cb){
-	var next_id = 0;
+	let next_id = 0;
 	while(parseInt(last_id, 16) >= next_id){
-		var now = new Date();
+		let now = new Date();
 		next_id = now.getTime().toString(16) + sequence_id + machine_id;
 	}
 	if(cb){
