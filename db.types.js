@@ -5,10 +5,10 @@
  */
 'use strict';
 
-var _ = require('lodash');
-var util = require('util');
-var moment = require('moment');
-var AWS = require('aws-sdk');
+const _ = require('lodash');
+const util = require('util');
+const moment = require('moment');
+const AWS = require('aws-sdk');
 
 /**
  * Base Property
@@ -190,7 +190,7 @@ util.inherits(DateTimeProperty, Property);
  * Set Property
  */
 function SetProperty(options){
-	var self = this;
+	let self = this;
 	Property.call(self, options);
 	if(options.type === Number || options.type === Boolean){
 		self.type_code = 'NS';
@@ -211,7 +211,7 @@ function SetProperty(options){
 
 			// Allow "Simple" reference properties
 			// which only encode to the ID string
-			var retVal = [];
+			let retVal = [];
 			if(self.options.simple){
 				val.forEach(function(x, $index){
 					if(typeof x === 'object'){
@@ -243,7 +243,7 @@ function SetProperty(options){
 			// A "Simple" reference property
 			// only contains the ID of the object,
 			// not the full object type and ID JSON string
-			var retVal = [];
+			let retVal = [];
 			if(self.options.simple){
 				val.forEach(function(x, $index){
 					retVal.push({ $type: self.options.$type, $id: x });
@@ -263,9 +263,9 @@ util.inherits(SetProperty, Property);
 /**
  * List (Ordered) Property
  */
-var GROUP_SEPARATOR = '\x1d';
+let GROUP_SEPARATOR = '\x1d';
 function ListProperty(options){
-	var self = this;
+	let self = this;
 	Property.call(self, options);
 	self.type_code = 'L';
 	// Allow Set properties to include References
@@ -281,7 +281,7 @@ function ListProperty(options){
 
 			// Allow "Simple" reference properties
 			// which only encode to the ID string
-			var retVal = [];
+			let retVal = [];
 			if(self.options.simple){
 				val.forEach(function(x, $index){
 					if(typeof x === 'object'){
@@ -316,7 +316,7 @@ function ListProperty(options){
 			// A "Simple" reference property
 			// only contains the ID of the object,
 			// not the full object type and ID JSON string
-			var retVal = [];
+			let retVal = [];
 			if(self.options.simple){
 				val.forEach(function(x, $index){
 					retVal.push({ $type: self.options.$type, $id: x });
@@ -359,17 +359,17 @@ function FileProperty(options){
 	 * @param callback: The callback to fire with the response metadata
 	 */
 	this.getUploadMetadata = function getUploadMetadata(obj, callback){
-		var self = this;
+		let self = this;
 
 		// Allow parameterizing the Prefix, with things like ${ts}
 		// for version handling, and ${id} for identifying what object
 		// this belongs to
-		var prefix = this.options.prefix || '${id}/${ts}/';
-		var now = new Date();
+		let prefix = this.options.prefix || '${id}/${ts}/';
+		let now = new Date();
 		prefix = prefix.replace('${ts}', now.getTime());
 		prefix = prefix.replace('${id}', obj.$id);
 
-		var policy_document = {
+		let policy_document = {
 			expiration: moment.utc().add('1', 'hour').format('YYYY-MM-DDTHH:mm:ss') + 'Z',
 			conditions: [
 				{ bucket: self.options.bucket },
@@ -384,9 +384,9 @@ function FileProperty(options){
 			if(credentials.sessionToken){
 				policy_document.conditions.push({ 'x-amz-security-token': credentials.sessionToken });
 			}
-			var policy_string = AWS.util.base64.encode(JSON.stringify(policy_document));
-			var signature = AWS.util.crypto.hmac(credentials.secretAccessKey, policy_string, 'base64', 'sha1');
-			var metadata = {
+			let policy_string = AWS.util.base64.encode(JSON.stringify(policy_document));
+			let signature = AWS.util.crypto.hmac(credentials.secretAccessKey, policy_string, 'base64', 'sha1');
+			let metadata = {
 				prefix: prefix + (self.options.filename_prefix || ''),
 				AWSAccessKeyId: credentials.accessKeyId,
 				acl: self.options.acl || 'private',

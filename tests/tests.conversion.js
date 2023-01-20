@@ -3,23 +3,23 @@
  */
 'use strict';
 
-var should = require('should');
-var _ = require('lodash');
+require('should');
+const _ = require('lodash');
 
 describe('convertValueToDynamo', function(){
-	var db = require('../db');
+	const db = require('../db');
 
 	it('Should convert a list', function(){
-		var now = new Date();
-		var listValues = [1, 'A', 'foo', 'z', 0, 19, 5, 'Zoomba', 'Decimal', 12345, 8, now];
-		var result = db.convertValueToDynamo(listValues);
+		const now = new Date();
+		const listValues = [1, 'A', 'foo', 'z', 0, 19, 5, 'Zoomba', 'Decimal', 12345, 8, now];
+		const result = db.convertValueToDynamo(listValues);
 		console.log(result);
 		// Every item in the result should be in order, but contain a type code
 		result.should.have.property('L');
 		result.L.length.should.eql(listValues.length);
 
 		listValues.forEach(function(v, $index){
-			var type = 'S';
+			let type = 'S';
 			if(typeof v === 'number' || typeof v === 'object'){
 				type = 'N';
 			}
@@ -32,8 +32,8 @@ describe('convertValueToDynamo', function(){
 	});
 
 	it('Should convert a StringSet', function(){
-		var values = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-		var result = db.convertValueToDynamo(values, 'SS');
+		const values = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+		const result = db.convertValueToDynamo(values, 'SS');
 		console.log(result);
 		result.should.have.property('SS');
 		values.forEach(function(v){
@@ -42,7 +42,7 @@ describe('convertValueToDynamo', function(){
 	});
 
 	it('Should convert a complex MapProperty', function(){
-		var values = {
+		const values = {
 			technical_contact: {
 				name: 'Chris Moyer',
 				email: 'cmoyer@aci.info',
@@ -51,12 +51,12 @@ describe('convertValueToDynamo', function(){
 			number_thing: 5,
 			list_thing: [ '1', 'a', 'f', 'Something'],
 		};
-		var result = db.convertValueToDynamo(values, 'M');
+		const result = db.convertValueToDynamo(values, 'M');
 		console.log(result);
 		result.should.have.property('M');
-		_.forEach(values, function(v, k){
+		_.forEach(values, function(v, k) {
 			result.M.should.have.property(k);
-			var val = result.M[k];
+			let val = result.M[k];
 			// Make sure every value is a structure
 			if(k === 'technical_contact'){
 				val.should.have.property('M');

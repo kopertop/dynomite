@@ -6,9 +6,9 @@
  * @author: Chris Moyer <cmoyer@newstex.com>
  */
 /* global require, module */
-var db = require('../db.js');
+const db = require('../db.js');
 
-var Sequence = db.define({
+const Sequence = db.define({
 	tableName: 'Sequence',
 	key: 'id',
 	properties: {
@@ -23,7 +23,7 @@ var Sequence = db.define({
  * @param callback: The callback to return with the next ID
  */
 Sequence.prototype.next = function sequenceNext(callback){
-	var self = this;
+	const self = this;
 	self.add({ value: 1 }, function(err, val){
 		if(val){
 			val = parseInt(val.Attributes.value.N, 10);

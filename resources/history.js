@@ -17,9 +17,9 @@
  * @author: Chris Moyer <cmoyer@newstex.com>
  */
 /* global require, exports */
-var db = require('../db.js');
+const db = require('../db.js');
 
-var History = db.define({
+const History = db.define({
 	tableName: 'History',
 	$type: 'History',
 	key: ['obj', 'ts'],

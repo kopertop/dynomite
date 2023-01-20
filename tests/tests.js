@@ -5,15 +5,14 @@
  */
 'use strict';
 
-var assert = require('assert');
-var should = require('should');
-var db = require('../db');
-var History = require('../resources/history').History;
+require('should');
+const assert = require('assert');
+const db = require('../db');
 
 /**
  * Test class for use in these test cases
  */
-var Test = db.define({
+const Test = db.define({
 	tableName: 'Test',
 	key: '$id',
 	properties: {
@@ -31,7 +30,7 @@ var Test = db.define({
 		someList: new db.types.ListProperty(),
 	}
 });
-var fake = db.define({
+const fake = db.define({
 	tableName: 'fake_table',
 	key: 'foo',
 	properties: {
@@ -40,7 +39,7 @@ var fake = db.define({
 });
 
 // Redefine the Test object to track history
-var HistoryTest = db.define({
+const HistoryTest = db.define({
 	$type: 'HistoryTest',
 	tableName: 'Test',
 	key: '$id',
@@ -68,7 +67,7 @@ beforeEach(function(){
 describe('[DB]', function(){
 
 	it('Should create a new Test object in our "Tests" DynamoDB table', function(done){
-		var obj = new Test('foo');
+		let obj = new Test('foo');
 		obj.name = '123456789345987345';
 		obj.stringSet = ['a', 'b', 'c', 'd'];
 		obj.save(function (err, data){
@@ -83,7 +82,7 @@ describe('[DB]', function(){
 	});
 
 	it('Should return a number, and number sets', function(done){
-		var obj = new Test('foo');
+		let obj = new Test('foo');
 		obj.numeric = 123;
 		obj.numberSet = [123, 456, 789, 154, -10];
 		obj.save(function(err, data){
@@ -112,21 +111,21 @@ describe('[DB]', function(){
 
 	it('Should not allow numbers outside of the range to be set', function(){
 		assert.throws( function(){
-			var obj = new Test('foo');
+			let obj = new Test('foo');
 			obj.num_restricted = 11;
 			obj.save(function(err, data){
 				console.log('Saved Object with num restricted 11');
 			});
 		}, Error);
 		assert.throws( function(){
-			var obj = new Test('foo');
+			let obj = new Test('foo');
 			obj.num_restricted = 0;
 			obj.save(function(err, data){
 				console.log('Saved Object with num restricted 0');
 			});
 		}, Error);
 		assert.throws( function(){
-			var obj = new Test('foo');
+			let obj = new Test('foo');
 			obj.num_restricted = 20;
 			obj.save(function(err, data){
 				console.log('Saved Object with num restricted 20');
@@ -134,7 +133,7 @@ describe('[DB]', function(){
 		}, Error);
 
 		// Try saving a valid number
-		var obj = new Test('foo');
+		let obj = new Test('foo');
 		obj.num_restricted = 5;
 		obj.save(function(err, data){});
 		// Try numbers at the very edge cases
@@ -150,7 +149,7 @@ describe('[DB]', function(){
 			assert.equal(val, 5);
 			done();
 		}
-		var Special = db.define({
+		let Special = db.define({
 			tableName: 'Test',
 			key: '$id',
 			properties: {
@@ -158,7 +157,7 @@ describe('[DB]', function(){
 				special: new db.types.StringProperty({validate: specialFnc})
 			}
 		});
-		var obj = new Special('foo');
+		let obj = new Special('foo');
 		obj.special = 5;
 		obj.save(function(err, data){
 			console.log('Save Completed');
@@ -171,15 +170,15 @@ describe('[DB]', function(){
 		// has to save 3 items, and then do a batch lookup
 		// in consistent mode
 		this.timeout(15000);
-		var obj1 = new Test('TestItem1');
+		let obj1 = new Test('TestItem1');
 		obj1.name = 'Some Name';
 		obj1.save(function(err, data){
 			assert(!err);
-			var obj2 = new Test('TestItem2');
+			let obj2 = new Test('TestItem2');
 			obj2.name = 'Some other name';
 			obj2.save(function(err, data){
 				assert(!err);
-				var obj3 = new Test('TestItem3');
+				let obj3 = new Test('TestItem3');
 				obj3.name = 'Some third name';
 				obj3.stringSet = [
 					'one',
@@ -191,13 +190,13 @@ describe('[DB]', function(){
 					// Batch Get
 					Test.batchLookup([ 'TestItem1', 'TestItem2', 'TestItem3' ], function(data){
 						// Make sure each item is in the batch result
-						var has = {
+						let has = {
 							TestItem1: false,
 							TestItem2: false,
 							TestItem3: false
 						};
-						for(var x in data){
-							var item = data[x];
+						for(let x in data){
+							let item = data[x];
 							has[item.$id] = true;
 						}
 						assert(has.TestItem1);
@@ -217,7 +216,7 @@ describe('[DB]', function(){
 	 */
 	it('Should encode and decode our complex JSON object', function(done){
 		this.timeout(15000);
-		var obj = new Test('TestJSONObject');
+		let obj = new Test('TestJSONObject');
 		obj.name = 'Test JSON Object';
 		obj.jsonProperty = [ [ 'Some Item', 'With Stuff', 0], [123, 'Some Other Item', 'With Things'], 'Some Basic Item', { some: 'Object', other: ['Complex Things', 123] }, 19, 0, 45];
 		obj.save(function(err, data){
@@ -250,7 +249,7 @@ describe('[DB]', function(){
 	describe('History', function(){
 		this.timeout(5000);
 		it('Should record a History record for a change', function(done){
-			var obj = new HistoryTest();
+			let obj = new HistoryTest();
 			obj.$id = 'TestObject';
 			obj.name = 'First Name';
 			obj.stringSet = [ 'One', 'Two' ];
@@ -258,7 +257,7 @@ describe('[DB]', function(){
 			obj.save(function(){
 				// Lookup the History for this object
 				setTimeout(function(){
-					var logsFound = 0;
+					let logsFound = 0;
 					obj.getHistory(function(err, log){
 						if(log){
 							logsFound += 1;
@@ -283,7 +282,7 @@ describe('[DB]', function(){
 				obj.save(function(){
 					// Check for the latest history object to include both 
 					setTimeout(function(){
-						var foundOurLog = false;
+						let foundOurLog = false;
 						obj.getHistory(function(err, log){
 							if(!foundOurLog && log){
 								console.log('Got Log', log);
@@ -327,8 +326,8 @@ describe('[DB]', function(){
 	// Test the "on(Save|Update)", "after(Save|Update)", "before(Save|Update)" events
 	describe('Hooks', function(){
 		it('Should fire our "onSave" event in the scope of this object', function(done){
-			var hookObj = null;
-			var HookTest = db.define({
+			let hookObj = null;
+			let HookTest = db.define({
 				tableName: 'Test',
 				key: '$id',
 				properties: {
@@ -347,8 +346,8 @@ describe('[DB]', function(){
 		});
 
 		it('Should fire our "afterSave" event in the scope of this object', function(done){
-			var hookObj = null;
-			var HookTest = db.define({
+			let hookObj = null;
+			let HookTest = db.define({
 				tableName: 'Test',
 				key: '$id',
 				properties: {
@@ -368,8 +367,8 @@ describe('[DB]', function(){
 		});
 
 		it('Should fire our "afterUpdate" event in the scope of this object', function(done){
-			var hookObj = null;
-			var HookTest = db.define({
+			let hookObj = null;
+			let HookTest = db.define({
 				tableName: 'Test',
 				key: '$id',
 				properties: {
@@ -392,8 +391,8 @@ describe('[DB]', function(){
 
 
 		it('Should fire our "onUpdate" event in the scope of this object', function(done){
-			var hookObj = null;
-			var HookTest = db.define({
+			let hookObj = null;
+			let HookTest = db.define({
 				tableName: 'Test',
 				key: '$id',
 				properties: {
@@ -420,7 +419,7 @@ describe('[DB]', function(){
 	// Check Defaults
 	describe('Defaults', function(){
 		it('Should automatically set the defaults', function(done){
-			var obj = new Test('TEST-OBJ');
+			let obj = new Test('TEST-OBJ');
 			obj.save(function(){
 				assert(obj.valueWithDefault === 0);
 				assert(obj.valueWithPositiveDefault === 10);
@@ -432,7 +431,7 @@ describe('[DB]', function(){
 		});
 
 		it('Should not override a value with a default', function(done){
-			var obj = new Test('TEST-OBJ');
+			let obj = new Test('TEST-OBJ');
 			obj.valueWithDefault = 15;
 			obj.valueWithPositiveDefault = -25;
 			obj.valueWithNegativeDefault = 0;
@@ -450,8 +449,8 @@ describe('[DB]', function(){
 	// Check the List property
 	it('Should return a list in the same order we created it', function(done){
 		this.timeout(8000);
-		var obj = new Test('TEST-OBJ-LIST');
-		var listValues = [1, 'A', 'foo', 'z', 0, 19, 5, 'Zoomba', 'Decimal', 12345, 8];
+		let obj = new Test('TEST-OBJ-LIST');
+		let listValues = [1, 'A', 'foo', 'z', 0, 19, 5, 'Zoomba', 'Decimal', 12345, 8];
 		obj.someList = listValues;
 		obj.save(function(){
 			setTimeout(function(){
@@ -470,8 +469,8 @@ describe('[DB]', function(){
 
 	// Make sure the old-style List object will be properly decoded as well
 	it('Should be backwards compatible with old-style List values', function(){
-		var listValues = ['Z', 'A', 'B', 'G', '0'];
-		var obj = Test.from_dynamo({
+		let listValues = ['Z', 'A', 'B', 'G', '0'];
+		let obj = Test.from_dynamo({
 			someList: { S: listValues.join('\x1d') },
 		});
 		obj.someList.should.be.instanceof(Array).and.have.lengthOf(listValues.length);

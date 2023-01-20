@@ -5,8 +5,8 @@
  */
 'use strict';
 
-var assert = require('assert');
-var Sequence = require('../resources/sequence.js');
+const assert = require('assert');
+const Sequence = require('../resources/sequence.js');
 
 describe('Sequence', function(){
 
@@ -17,7 +17,7 @@ describe('Sequence', function(){
 				sequence.value = 0;
 				sequence.save();
 			}
-			var old_sequence = sequence.value;
+			let old_sequence = sequence.value;
 			sequence.next(function(err, id){
 				console.log({err: err, id: id, old_sequence: sequence.value});
 				assert(!err);
