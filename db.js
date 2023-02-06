@@ -209,7 +209,7 @@ function save(obj, callback, expected){
 	for (let prop_name in properties){
 		if(ignored_props.indexOf(prop_name) < 0){
 			const prop_type = properties[prop_name].type_code;
-			const prop_val = obj[prop_name];
+			let prop_val = obj[prop_name];
 
 			// Validate
 			properties[prop_name].validate(prop_val);
@@ -217,13 +217,13 @@ function save(obj, callback, expected){
 			// Check for custom property options
 			if(properties[prop_name].options){
 				// Auto now and Auto now add should automatically get set
-				if( (properties[prop_name].options.auto_now_add && !prop_val) || properties[prop_name].options.auto_now){
+				if((properties[prop_name].options.auto_now_add && !prop_val) || properties[prop_name].options.auto_now){
 					prop_val = new Date();
 					// Also set the value on the object so it is returned properly
 					obj[prop_name] = prop_val;
 				}
 				// Default values should be set on save
-				if( properties[prop_name].options.default !== undefined && prop_val === undefined ){
+				if(properties[prop_name].options.default !== undefined && prop_val === undefined ){
 					prop_val = properties[prop_name].options.default;
 					obj[prop_name] = prop_val;
 				}
