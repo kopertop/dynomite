@@ -3,6 +3,7 @@
  * Test the Sequence Generator
  *
  */
+/* global describe, it */
 'use strict';
 
 const assert = require('assert');

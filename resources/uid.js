@@ -6,7 +6,6 @@
  *
  * @author: Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, module */
 const db = require('../db.js');
 
 const UID = db.define({
@@ -77,7 +76,7 @@ UID.next = function(type, callback, properties){
 				for (let prop_name in properties){
 					obj[prop_name] = properties[prop_name];
 				}
-				obj.save(function(err, data){
+				obj.save(function(err){
 					if(err){
 						// If there is an error, try again
 						setTimeout(function(){

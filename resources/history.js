@@ -16,7 +16,6 @@
  *
  * @author: Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, exports */
 const db = require('../db.js');
 
 const History = db.define({

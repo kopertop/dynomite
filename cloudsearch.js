@@ -4,7 +4,7 @@
  *
  * @author Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, exports, process, Buffer */
+/* global process, Buffer */
 const http = require('http');
 const querystring = require('querystring');
 

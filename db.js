@@ -91,9 +91,8 @@ function lookup(model, id, callback, opts){
  * @param model: The Model object to look for
  * @param ids: The list of IDs
  * @param callback: A callback function to call when the operation is completed
- * @param opts: Optional options to pass through to DynamoDB.batchGetItem
  */
-function batchLookup(model, ids, callback, opts){
+function batchLookup(model, ids, callback){
 	const keys = [];
 	for(let x in ids){
 		const id = ids[x];
@@ -133,7 +132,7 @@ function convertValueToDynamo(val, type_code){
 		}
 		// Convert each item in the list to the type of value it is
 		const vals = [];
-		val.forEach(function(v, $index){
+		val.forEach(function(v){
 			// Lists could be either the 'L' type, or a Set type
 			if(type_code && type_code.length === 2 && type_code[1] === 'S'){
 				// If we're a Set, don't encode
@@ -436,7 +435,6 @@ function decodeDynamoProperty(prop_val, prop_name, Cls){
 				listValue.push(decodeDynamoProperty(v, null, Cls));
 			});
 			val = listValue;
-		} else {
 		}
 		// Decode into the JS type
 		if(expected_prop && expected_prop.decode !== undefined){
@@ -728,7 +726,7 @@ function define(options){
 				}
 
 				// New objects wouldn't yet have a $hist object
-				const hist = self.$hist;
+				let hist = self.$hist;
 				if(!hist){
 					hist = new History();
 				}
