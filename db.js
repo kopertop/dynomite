@@ -571,7 +571,7 @@ function define(options){
 					}
 
 					// New objects wouldn't yet have a $hist object
-					const hist = self.$hist;
+					let hist = self.$hist;
 					if(!hist){
 						hist = new History();
 					}
