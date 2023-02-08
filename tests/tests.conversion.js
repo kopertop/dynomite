@@ -1,6 +1,7 @@
 /**
  * Test the convertValueToDynamo function
  */
+/* global describe, it */
 'use strict';
 
 require('should');

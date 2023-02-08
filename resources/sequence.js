@@ -5,7 +5,6 @@
  *
  * @author: Chris Moyer <cmoyer@newstex.com>
  */
-/* global require, module */
 const db = require('../db.js');
 
 const Sequence = db.define({

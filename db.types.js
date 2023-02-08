@@ -22,7 +22,7 @@ function Property(options){
 	if(options && options.validate){
 		this.validate = options.validate;
 	} else {
-		this.validate = function(val){
+		this.validate = function(){
 		};
 	}
 }
@@ -213,13 +213,13 @@ function SetProperty(options){
 			// which only encode to the ID string
 			let retVal = [];
 			if(self.options.simple){
-				val.forEach(function(x, $index){
+				val.forEach(function(x){
 					if(typeof x === 'object'){
 						retVal.push(x.$id);
 					}
 				});
 			} else {
-				val.forEach(function(x, $index){
+				val.forEach(function(x){
 					if(typeof x === 'object'){
 						retVal.push(JSON.stringify({
 							$type: x.$type,
@@ -245,11 +245,11 @@ function SetProperty(options){
 			// not the full object type and ID JSON string
 			let retVal = [];
 			if(self.options.simple){
-				val.forEach(function(x, $index){
+				val.forEach(function(x){
 					retVal.push({ $type: self.options.$type, $id: x });
 				});
 			} else {
-				val.forEach(function(x, $index){
+				val.forEach(function(x){
 					retVal.push(JSON.parse(x));
 				});
 			}
@@ -283,13 +283,13 @@ function ListProperty(options){
 			// which only encode to the ID string
 			let retVal = [];
 			if(self.options.simple){
-				val.forEach(function(x, $index){
+				val.forEach(function(x){
 					if(typeof x === 'object'){
 						retVal.push(x.$id);
 					}
 				});
 			} else {
-				val.forEach(function(x, $index){
+				val.forEach(function(x){
 					if(typeof x === 'object'){
 						retVal.push(JSON.stringify({
 							$type: x.$type,
@@ -318,11 +318,11 @@ function ListProperty(options){
 			// not the full object type and ID JSON string
 			let retVal = [];
 			if(self.options.simple){
-				val.forEach(function(x, $index){
+				val.forEach(function(x){
 					retVal.push({ $type: self.options.$type, $id: x });
 				});
 			} else {
-				val.forEach(function(x, $index){
+				val.forEach(function(x){
 					retVal.push(JSON.parse(x));
 				});
 			}

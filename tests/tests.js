@@ -3,6 +3,7 @@
  * Mocha tests for Dynmoite
  *
  */
+/* global describe, it, beforeEach, after */
 'use strict';
 
 require('should');
@@ -28,13 +29,6 @@ const Test = db.define({
 		valueWithNegativeDefault: new db.types.NumberProperty({ default: -10 }),
 		stringWithDefault: new db.types.StringProperty({ default: 'SomeDefaultString' }),
 		someList: new db.types.ListProperty(),
-	}
-});
-const fake = db.define({
-	tableName: 'fake_table',
-	key: 'foo',
-	properties: {
-		foo: new db.types.StringProperty()
 	}
 });
 
@@ -70,7 +64,7 @@ describe('[DB]', function(){
 		let obj = new Test('foo');
 		obj.name = '123456789345987345';
 		obj.stringSet = ['a', 'b', 'c', 'd'];
-		obj.save(function (err, data){
+		obj.save(function (err) {
 			assert(!err);
 			console.log('Save Completed');
 			Test.lookup('foo', function(new_obj){
@@ -85,7 +79,7 @@ describe('[DB]', function(){
 		let obj = new Test('foo');
 		obj.numeric = 123;
 		obj.numberSet = [123, 456, 789, 154, -10];
-		obj.save(function(err, data){
+		obj.save(function(err) {
 			assert(!err);
 			Test.lookup('foo', function(new_obj){
 				assert.equal(new_obj.numeric, obj.numeric);
@@ -113,21 +107,21 @@ describe('[DB]', function(){
 		assert.throws( function(){
 			let obj = new Test('foo');
 			obj.num_restricted = 11;
-			obj.save(function(err, data){
+			obj.save(function() {
 				console.log('Saved Object with num restricted 11');
 			});
 		}, Error);
 		assert.throws( function(){
 			let obj = new Test('foo');
 			obj.num_restricted = 0;
-			obj.save(function(err, data){
+			obj.save(function() {
 				console.log('Saved Object with num restricted 0');
 			});
 		}, Error);
 		assert.throws( function(){
 			let obj = new Test('foo');
 			obj.num_restricted = 20;
-			obj.save(function(err, data){
+			obj.save(function() {
 				console.log('Saved Object with num restricted 20');
 			});
 		}, Error);
@@ -135,12 +129,12 @@ describe('[DB]', function(){
 		// Try saving a valid number
 		let obj = new Test('foo');
 		obj.num_restricted = 5;
-		obj.save(function(err, data){});
+		obj.save(function(){});
 		// Try numbers at the very edge cases
 		obj.num_restricted = 1;
-		obj.save(function(err, data){});
+		obj.save(function(){});
 		obj.num_restricted = 10;
-		obj.save(function(err, data){});
+		obj.save(function(){});
 	});
 
 	it('Should call our special validate function', function(done){
@@ -159,7 +153,7 @@ describe('[DB]', function(){
 		});
 		let obj = new Special('foo');
 		obj.special = 5;
-		obj.save(function(err, data){
+		obj.save(function() {
 			console.log('Save Completed');
 		});
 		
@@ -172,11 +166,11 @@ describe('[DB]', function(){
 		this.timeout(15000);
 		let obj1 = new Test('TestItem1');
 		obj1.name = 'Some Name';
-		obj1.save(function(err, data){
+		obj1.save(function(err){
 			assert(!err);
 			let obj2 = new Test('TestItem2');
 			obj2.name = 'Some other name';
-			obj2.save(function(err, data){
+			obj2.save(function(err){
 				assert(!err);
 				let obj3 = new Test('TestItem3');
 				obj3.name = 'Some third name';
@@ -185,7 +179,7 @@ describe('[DB]', function(){
 					'two',
 					'third'
 				];
-				obj3.save(function(err, data){
+				obj3.save(function(err){
 					assert(!err);
 					// Batch Get
 					Test.batchLookup([ 'TestItem1', 'TestItem2', 'TestItem3' ], function(data){
@@ -219,7 +213,7 @@ describe('[DB]', function(){
 		let obj = new Test('TestJSONObject');
 		obj.name = 'Test JSON Object';
 		obj.jsonProperty = [ [ 'Some Item', 'With Stuff', 0], [123, 'Some Other Item', 'With Things'], 'Some Basic Item', { some: 'Object', other: ['Complex Things', 123] }, 19, 0, 45];
-		obj.save(function(err, data){
+		obj.save(function(err) {
 			assert(!err);
 			// Lookup the item and make sure the JSON property is the same
 			Test.lookup(obj.$id, function(refObj){

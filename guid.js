@@ -10,7 +10,7 @@
  *
  * IDs returned are roughly sortable by date, and hex
  */
-/* global require, exports, process */
+/* global process */
 const crypto = require('crypto');
 
 // Get the local machine ID, for which we just use 
